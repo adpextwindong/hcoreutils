@@ -27,4 +27,4 @@ buildResp xs = (intercalate " " xs, True)
 
 loopIfNeeded :: (String, Bool) -> [IO ()]
 loopIfNeeded (resp, True) = repeat $ print resp
-loopIfNeeded (resp, False) = [print resp]
+loopIfNeeded (resp, False) = [putStr resp]
