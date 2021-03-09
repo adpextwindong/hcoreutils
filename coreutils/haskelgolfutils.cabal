@@ -16,7 +16,7 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 executable yes
-  main-is:             yes.hs
+  main-is:             src/yes.hs
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.9 && <4.10
