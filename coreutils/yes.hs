@@ -4,7 +4,6 @@ import System.Environment
 import Data.List
 import Control.Monad
 
-help :: String
 help = "Usage: yes [STRING]...\n\
        \  or:  yes OPTION\n\
        \Repeatedly output a line with all specified STRING(s), or 'y'.\n\
@@ -19,8 +18,8 @@ main = sequence_ =<< liftM (loopIfNeeded . buildResp) getArgs
 
 buildResp :: [String] -> (String, Bool)
 buildResp [] = ("y", True)
-buildResp ("--help":xs) = (help, False)
-buildResp ("--version":xs) = (version, False)
+buildResp ("--help":_) = (help, False)
+buildResp ("--version":_) = (version, False)
 buildResp xs = (intercalate " " xs, True)
 
 loopIfNeeded :: (String, Bool) -> [IO ()]
