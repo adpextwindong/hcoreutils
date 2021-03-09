@@ -24,5 +24,5 @@ buildResp ("--version":xs) = (version, False)
 buildResp xs = (intercalate " " xs, True)
 
 loopIfNeeded :: (String, Bool) -> [IO ()]
-loopIfNeeded (resp, True) = repeat $ print resp
-loopIfNeeded (resp, False) = [putStr resp]
+loopIfNeeded (resp, True) = repeat . putStrLn . id $ resp
+loopIfNeeded (resp, False) = [putStr (id resp)]
