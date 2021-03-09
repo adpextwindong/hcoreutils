@@ -2,6 +2,7 @@ module Main where
 
 import System.Environment
 import Data.List
+import Data.Either
 import Control.Monad
 
 help = "Usage: yes [STRING]...\n\
@@ -16,12 +17,13 @@ version = "yes (Haskellgolf coreutils) 0.0.1\n\
 
 main = sequence_ =<< liftM (loopIfNeeded . buildResp) getArgs
 
-buildResp :: [String] -> (String, Bool)
-buildResp [] = ("y", True)
-buildResp ("--help":_) = (help, False)
-buildResp ("--version":_) = (version, False)
-buildResp xs = (intercalate " " xs, True)
+buildResp :: [String] -> Either String String
+buildResp ("--help":_) = Right help
+buildResp ("--version":_) = Right version
 
-loopIfNeeded :: (String, Bool) -> [IO ()]
-loopIfNeeded (resp, True) = repeat . putStrLn . id $ resp
-loopIfNeeded (resp, False) = [putStr (id resp)]
+buildResp [] = Left "y"
+buildResp xs = Left $ intercalate " " xs
+
+loopIfNeeded :: Either String String -> [IO ()]
+loopIfNeeded (Left resp) = repeat . putStrLn . id $ resp
+loopIfNeeded (Right optionMsg) = [putStr (id optionMsg)]
