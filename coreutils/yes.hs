@@ -15,9 +15,7 @@ version = "yes (Haskellgolf coreutils) 0.0.1\n\
           \License: BSD-2-Clause\n\
           \Written by George Takumi Crary"
 
-main = do
-    actions <- liftM (loopIfNeeded . buildResp) getArgs
-    sequence_ actions
+main = sequence_ =<< liftM (loopIfNeeded . buildResp) getArgs
 
 buildResp :: [String] -> (String, Bool)
 buildResp [] = ("y", True)
