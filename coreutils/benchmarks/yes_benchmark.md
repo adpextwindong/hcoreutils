@@ -15,3 +15,6 @@ While my Haskell version (commit 7d61da2) gets
 ```
 
 Obviously theres some performance still on the table.
+
+After switching from String's to Text its actually slower... Around 4.46MiB/s oddly enough.
+But adding cli args the rate jumps up so at this point I'm thinking we better look into buffering the output.
