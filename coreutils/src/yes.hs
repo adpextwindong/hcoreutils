@@ -18,7 +18,7 @@ version = T.pack "yes (Haskellgolf coreutils) 0.0.1\n\
                  \License: BSD-2-Clause\n\
                  \Written by George Takumi Crary"
 
-main = sequence_ =<< liftM (loopIfNeeded . buildResp) getArgs
+main2 = sequence_ =<< liftM (loopIfNeeded . buildResp) getArgs
 
 buildResp :: [String] -> Either T.Text T.Text
 buildResp ("--help":_) = Right help
@@ -34,3 +34,12 @@ loopIfNeeded :: Either T.Text T.Text -> [IO ()]
 -- We should see if we're paying the cost for this cons cell and if there a better way
 loopIfNeeded (Left resp) = repeat . T.putStrLn $ resp
 loopIfNeeded (Right optionMsg) = [T.putStr optionMsg]
+
+-- Is paying for a `then` operation better than using repeat
+main :: IO ()
+main = join $ liftM (loopDirectIfNeeded . buildResp) getArgs
+
+loopDirectIfNeeded :: Either T.Text T.Text -> IO ()
+loopDirectIfNeeded lr@(Left resp) = T.putStrLn resp >> (loopDirectIfNeeded lr)
+loopDirectIfNeeded (Right optionMsg) = T.putStrLn optionMsg
+-- I guess we should buffer IO at this point...
