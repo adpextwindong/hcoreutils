@@ -18,3 +18,12 @@ Obviously theres some performance still on the table.
 
 After switching from String's to Text its actually slower... Around 4.46MiB/s oddly enough.
 But adding cli args the rate jumps up so at this point I'm thinking we better look into buffering the output.
+
+--------------------------------------------------------------------------------
+
+Benchmarking the OpenBSD version of yes.c w/ the pledge stuff commented out we get this on my cygwin env.
+
+```
+λ ./yes_openbsd.exe | pv -a > /dev/null
+[7.95MiB/s]
+```
