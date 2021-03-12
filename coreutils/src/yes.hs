@@ -28,5 +28,9 @@ buildResp [] = Left (T.pack "y")
 buildResp xs = Left $ T.pack (intercalate " " xs)
 
 loopIfNeeded :: Either T.Text T.Text -> [IO ()]
+
+-- In Data.List repeat is
+-- repeat x = xs where xs = x : xs
+-- We should see if we're paying the cost for this cons cell and if there a better way
 loopIfNeeded (Left resp) = repeat . T.putStrLn $ resp
 loopIfNeeded (Right optionMsg) = [T.putStr optionMsg]
