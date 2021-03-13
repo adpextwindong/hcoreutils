@@ -43,3 +43,10 @@ loopDirectIfNeeded :: Either T.Text T.Text -> IO ()
 loopDirectIfNeeded lr@(Left resp) = T.putStrLn resp >> (loopDirectIfNeeded lr)
 loopDirectIfNeeded (Right optionMsg) = T.putStrLn optionMsg
 -- I guess we should buffer IO at this point...
+
+loopForeverLR :: Either T.Text T.Text -> IO ()
+loopForeverLR (Left resp) = forever . T.putStrLn $ resp
+loopForeverLR (Right optionMsg) = T.putStr optionMsg
+
+main3 : IO ()
+main3 = join $ liftM (loopForeverLR . buildResp) getArgs
