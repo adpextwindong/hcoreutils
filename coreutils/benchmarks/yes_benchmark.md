@@ -27,3 +27,5 @@ Benchmarking the OpenBSD version of yes.c w/ the pledge stuff commented out we g
 λ ./yes_openbsd.exe | pv -a > /dev/null
 [7.95MiB/s]
 ```
+
+TODO we should look into the allocs and write syscalls being done
