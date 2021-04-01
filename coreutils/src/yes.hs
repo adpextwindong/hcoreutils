@@ -2,7 +2,6 @@ module Main where
 
 import System.Environment
 import Data.List
-import Data.Either
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import qualified System.IO as SIO
