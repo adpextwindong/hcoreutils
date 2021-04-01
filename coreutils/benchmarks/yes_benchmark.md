@@ -29,3 +29,23 @@ Benchmarking the OpenBSD version of yes.c w/ the pledge stuff commented out we g
 ```
 
 TODO we should look into the allocs and write syscalls being done
+
+--------------------------------------------------------------------------------
+
+After switching to Data.Text packed and buffering the stdout using System.IO hSetBuffering w/ 4096 as the block size we get this on the windows machine:
+
+```
+3.13GiB 0:01:10 [45.7MiB/s]
+```
+
+--------------------------------------------------------------------------------
+
+Switched the args version to pack the message into nearly a block size.
+Oddly enough I've found some local optima for the args version.
+
+```
+λghc --make -O3 src/yes.hs && src/yes.exe heres the messagedwa | pv > /dev/null
+[1 of 1] Compiling Main             ( src\yes.hs, src\yes.o )
+Linking src\yes.exe ...
+1.23GiB 0:00:16 [  75MiB/s] [                           <=>
+```
