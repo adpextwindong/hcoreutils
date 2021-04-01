@@ -4,3 +4,6 @@ dist-newstyle/
 *.lock
 *.swp
 .stack-work/
+
+*.hi
+*.o
