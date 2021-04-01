@@ -49,3 +49,10 @@ Oddly enough I've found some local optima for the args version.
 Linking src\yes.exe ...
 1.23GiB 0:00:16 [  75MiB/s] [                           <=>
 ```
+--------------------------------------------------------------------------------
+
+Ported it from Data.Text to ByteString.
+
+```
+2.24GiB 0:00:21 [ 107MiB/s]
+```
