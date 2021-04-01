@@ -72,3 +72,12 @@ python yes.py | pv > /dev/null
 ```
 
 Note: Python 2.7.18 on the windows machine
+
+--------------------------------------------------------------------------------
+On my T420 Thinkpad I get
+
+1.01GiB/s with the current impl (bd18131)
+
+while GNU yes 8.28 gets
+
+4.09GiB/s
