@@ -19,11 +19,20 @@ version = T.pack "yes (Haskellgolf coreutils) 0.0.1\n\
                  \License: BSD-2-Clause\n\
                  \Written by George Takumi Crary"
 
+packMsg :: [String] -> T.Text
+packMsg xs = packedMsg
+                where
+                    msg = intercalate " " xs :: [Char]
+                    ln = length msg
+                    nFit = ln * (bufferSize `div` ln)
+                    packedMsg = T.pack . take nFit . cycle $ msg
+
+
 buildResp :: [String] -> Either T.Text T.Text
 buildResp ("--help":_)      = Right help
 buildResp ("--version":_)   = Right version
-buildResp []                = Left (T.pack . take bufferSize . cycle $ "y\n")
-buildResp args              = Left $ T.pack (intercalate " " args)
+buildResp []                = Left (packMsg ["y\n"])
+buildResp args              = Left (packMsg args)
 
 loopForeverLR :: Either T.Text T.Text -> IO ()
 loopForeverLR (Left resp)       = forever . T.putStrLn $ resp
