@@ -4,39 +4,38 @@ import System.Environment
 import Data.List
 import Data.Either
 import Control.Monad
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.ByteString.Char8 as B
 import qualified System.IO as SIO
 
 
-help = T.pack "Usage: yes [STRING]...\n\
+help = B.pack "Usage: yes [STRING]...\n\
               \  or:  yes OPTION\n\
               \Repeatedly output a line with all specified STRING(s), or 'y'.\n\
               \\n\
               \Haskell coreutils by George Takumi Crary"
 
-version = T.pack "yes (Haskellgolf coreutils) 0.0.1\n\
+version = B.pack "yes (Haskellgolf coreutils) 0.0.1\n\
                  \License: BSD-2-Clause\n\
                  \Written by George Takumi Crary"
 
-packMsg :: [String] -> T.Text
+packMsg :: [String] -> B.ByteString
 packMsg xs = packedMsg
                 where
                     msg = intercalate " " xs :: [Char]
                     ln = length msg
                     nFit = ln * (bufferSize `div` ln)
-                    packedMsg = T.pack . take nFit . cycle $ msg
+                    packedMsg = B.pack . take nFit . cycle $ msg
 
 
-buildResp :: [String] -> Either T.Text T.Text
+buildResp :: [String] -> Either B.ByteString B.ByteString
 buildResp ("--help":_)      = Right help
 buildResp ("--version":_)   = Right version
 buildResp []                = Left (packMsg ["y\n"])
 buildResp args              = Left (packMsg args)
 
-loopForeverLR :: Either T.Text T.Text -> IO ()
-loopForeverLR (Left resp)       = forever . T.putStrLn $ resp
-loopForeverLR (Right optionMsg) = T.putStr optionMsg
+loopForeverLR :: Either B.ByteString B.ByteString -> IO ()
+loopForeverLR (Left resp)       = forever . B.putStrLn $ resp
+loopForeverLR (Right optionMsg) = B.putStr optionMsg
 
 bufferSize = 4096
 
