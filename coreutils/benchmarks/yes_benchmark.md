@@ -56,3 +56,19 @@ Ported it from Data.Text to ByteString.
 ```
 2.24GiB 0:00:21 [ 107MiB/s]
 ```
+
+--------------------------------------------------------------------------------
+For the record this minimal "y" only yes version in Python is as fast as the string version.
+
+```python
+if __name__ == "__main__":
+    while(True):
+        print "y"
+```
+
+```
+python yes.py | pv > /dev/null
+ 180MiB 0:00:41 [4.44MiB/s]
+```
+
+Note: Python 2.7.18 on the windows machine
