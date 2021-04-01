@@ -10,12 +10,14 @@ newtype UsageMsg = MkUsageMsg B.ByteString
 fromUsageMsg :: UsageMsg -> B.ByteString
 fromUsageMsg (MkUsageMsg bs) = bs
 
+help :: UsageMsg
 help = MkUsageMsg $ B.pack "Usage: yes [STRING]...\n\
               \  or:  yes OPTION\n\
               \Repeatedly output a line with all specified STRING(s), or 'y'.\n\
               \\n\
               \Haskell coreutils by George Takumi Crary"
 
+version :: UsageMsg
 version = MkUsageMsg $ B.pack "yes (Haskellgolf coreutils) 0.0.1\n\
                  \License: BSD-2-Clause\n\
                  \Written by George Takumi Crary"
@@ -39,8 +41,10 @@ loopForeverLR :: Either B.ByteString UsageMsg -> IO ()
 loopForeverLR (Left resp)       = forever . B.putStrLn $ resp
 loopForeverLR (Right optionMsg) = B.putStr $ fromUsageMsg optionMsg
 
+bufferSize :: Int
 bufferSize = 4096
 
+main :: IO ()
 main = do
     SIO.hSetBuffering SIO.stdout $ SIO.BlockBuffering (Just bufferSize)
     join $ liftM (loopForeverLR . buildResp) getArgs
