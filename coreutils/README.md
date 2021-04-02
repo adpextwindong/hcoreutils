@@ -1,6 +1,7 @@
 Text/shell utilities
 
 - [yes](src/yes.hs)
+- [wc](src/wc.hs)
 
 I'll be going through [this list](https://wiki.debian.org/coreutils) and do whatever feels tackleable.
 
