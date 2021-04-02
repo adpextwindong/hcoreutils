@@ -23,7 +23,7 @@ main :: IO ()
 main = do
     fps <- getArgs
     files <- mapM B.readFile fps :: IO [ByteString]
-    let results = fmap wcBS files :: [(Int, Int, Int)]
+    let results = wcBS <$> files
     let total = totalLCB results
-    sequence_ $ fmap putStrLn $ fmap show $ zip results fps
-    putStrLn $ show (total, "total")
+    sequence_ $ print <$> zip results fps
+    print (total, "total")
