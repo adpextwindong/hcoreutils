@@ -12,6 +12,7 @@ data WcApp = WcApp { appBytes :: Bool
                    , appVersion :: Bool
                    , appTargets :: [FilePath]
                    }
+    deriving Show
 -- Optparse parsers
 argpBytes = switch ( short 'c' <> long "bytes" <> help "print the byte counts" )
 argpChars = switch ( short 'm' <> long "chars" <> help "print the character counts" )
@@ -36,4 +37,9 @@ appArgsParser = WcApp
        <*> argpMTargets
 
 main :: IO ()
-main = return ()
+main = print =<< execParser opts
+     where
+        opts = info (appArgsParser <**> helper)
+          ( fullDesc
+          <> progDesc "wc - opt test"
+          <> header "hey this is the header?" )
