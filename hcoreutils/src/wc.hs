@@ -74,9 +74,8 @@ countLines = (-1 +) . length . B.lines
 countWords = length . B.words
 countBytes = B.length
 countMaxLineLength = foldl max 0 . fmap B.length . B.lines
+--TODO Figure out chars vs bytes handling
 
-
---Figure out chars vs bytes handling
 type FileWCCount = (Int,Int,Int,Int,Int)
 wcBS :: WcOpts -> ByteString -> FileWCCount
 wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
