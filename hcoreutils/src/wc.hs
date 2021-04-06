@@ -88,7 +88,9 @@ wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
         cMaxLineLength = if appMaxLineLength os then countMaxLineLength s else 0
 
 totalCounts :: [FileWCCount] -> FileWCCount
-totalCounts = foldl (\(a,b,c,d,maxLINESLeft) (x,y,z,t,maxLINESRight) -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
+totalCounts = foldl (\(a,b,c,d,maxLINESLeft)
+                      (x,y,z,t,maxLINESRight)
+                   -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
 
 printCounts :: WcOpts -> (FilePath, FileWCCount) -> IO ()
 printCounts os (fname, (l, w, b, c, mL)) = do
