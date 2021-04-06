@@ -113,5 +113,5 @@ main = do
     files <- mapM B.readFile fps :: IO [ByteString]
     let results = wcBS opts <$> files
     let total = totalCounts results
-    sequence_ $ (printCounts opts) <$> zip fps results
+    sequence_ $ printCounts opts <$> zip fps results
     printCounts opts ("total", total)
