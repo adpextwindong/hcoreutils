@@ -1,11 +1,8 @@
 module Main where
 
-import System.Environment
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified System.IO as SIO
 import Options.Applicative
-import Data.Semigroup ((<>))
 import Data.Maybe
 import Data.List
 
