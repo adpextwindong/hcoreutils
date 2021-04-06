@@ -7,15 +7,19 @@ import qualified System.IO as SIO
 import Options.Applicative
 import Data.Semigroup ((<>))
 
-data WcApp = WcApp { appBytes :: Bool
-                   , appChars :: Bool
-                   , appLines :: Bool
-                   , appMaxLineLength :: Bool
-                   , appWords :: Bool
-                   , appHelp :: Bool
-                   , appVersion :: Bool
+data WcApp = WcApp {
+                     appOpts :: WcOpts
                    , appTargets :: [FilePath]
                    }
+
+data WcOpts = WcOpts { appBytes :: Bool
+                     , appChars :: Bool
+                     , appLines :: Bool
+                     , appMaxLineLength :: Bool
+                     , appWords :: Bool
+                     , appHelp :: Bool
+                     , appVersion :: Bool
+                     }
     deriving Show
 -- Optparse parsers
 argpBytes = switch ( short 'c' <> long "bytes" <> help "print the byte counts" )
@@ -29,19 +33,23 @@ argpVersion = switch ( long "help" <> help "output version information and exit"
 argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "FILES...") )
 
+appOptsParser :: Parser WcOpts
+appOptsParser = WcOpts
+           <$> argpBytes
+           <*> argpChars
+           <*> argpLines
+           <*> argpMaxLineLength
+           <*> argpWords
+           <*> argpHelp
+           <*> argpVersion
+
 appArgsParser :: Parser WcApp
 appArgsParser = WcApp
-       <$> argpBytes
-       <*> argpChars
-       <*> argpLines
-       <*> argpMaxLineLength
-       <*> argpWords
-       <*> argpHelp
-       <*> argpVersion
-       <*> argpMTargets
+      <$> appOptsParser
+      <*> argpMTargets
 
-main :: IO ()
-main = print =<< execParser opts
+mainArgs :: IO WcApp
+mainArgs = execParser opts
      where
         opts = info (appArgsParser <**> helper)
           ( fullDesc
@@ -63,8 +71,13 @@ wcBS s = (cLines, cWords, cBytes)
 totalLCB :: [(Int,Int,Int)] -> (Int,Int,Int)
 totalLCB = foldl (\(a,b,c) (x,y,z) -> (a+x, b+y, c+z)) (0,0,0)
 
-main' :: WcApp -> IO ()
-main' args = do
+main :: IO ()
+main = do
+    args <- mainArgs
+    print $ appTargets args
+
+main' :: IO ()
+main' = do
     fps <- getArgs
     files <- mapM B.readFile fps :: IO [ByteString]
     let results = wcBS <$> files
