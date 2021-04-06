@@ -15,13 +15,20 @@ data WcOpts = WcOpts { appLines :: Bool
                      , appVersion :: Bool
                      } deriving Show
 
+argpBytes :: Parser Bool
 argpBytes           = switch ( short 'c' <> long "bytes" <> help "print the byte counts" )
+argpChars :: Parser Bool
 argpChars           = switch ( short 'm' <> long "chars" <> help "print the character counts" )
+argpLines :: Parser Bool
 argpLines           = switch ( short 'l' <> long "lines" <> help "print the newline counts" )
+argpMaxLineLength :: Parser Bool
 argpMaxLineLength   = switch ( short 'L' <> long "max-line-length" <> help "print the maximum display width" )
+argpWords :: Parser Bool
 argpWords           = switch ( short 'w' <> long "words" <> help "print the word counts" )
 
+argpHelp :: Parser Bool
 argpHelp            = switch ( long "help" <> help "display this help and exit" )
+argpVersion :: Parser Bool
 argpVersion         = switch ( long "help" <> help "output version information and exit" )
 
 appOptsParser :: Parser WcOpts
@@ -38,6 +45,7 @@ pEmptyOpts :: WcOpts -> Bool
 pEmptyOpts (WcOpts False False False False False _ _ ) = True
 pEmptyOpts _ = False
 
+mergeDefaultOpts :: WcOpts -> WcOpts
 mergeDefaultOpts opts = WcOpts True True True True False optsH optsV
     where
         optsH = appHelp opts
@@ -70,9 +78,16 @@ mainArgs = do
           <> header "hey this is the header?" )
 --OPTION PARSING----------------------------------------------------------------
 
+countLines :: ByteString -> Int
 countLines = (-1 +) . length . B.lines
+
+countWords :: ByteString -> Int
 countWords = length . B.words
+
+countBytes :: ByteString -> Int
 countBytes = B.length
+
+countMaxLineLength :: ByteString -> Int
 countMaxLineLength = foldl max 0 . fmap B.length . B.lines
 --TODO Figure out chars vs bytes handling
 
