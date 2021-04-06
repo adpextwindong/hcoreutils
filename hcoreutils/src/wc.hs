@@ -1,5 +1,9 @@
 module Main where
 
+import System.Environment
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as B
+import qualified System.IO as SIO
 import Options.Applicative
 import Data.Semigroup ((<>))
 
@@ -43,3 +47,27 @@ main = print =<< execParser opts
           ( fullDesc
           <> progDesc "wc - opt test"
           <> header "hey this is the header?" )
+--OPTION PARSING----------------------------------------------------------------
+
+countLines = (-1 +) . length . B.lines
+countWords = length . B.words
+countBytes = B.length
+
+wcBS :: ByteString -> (Int, Int, Int)
+wcBS s = (cLines, cWords, cBytes)
+    where
+        cLines = countLines s
+        cWords = countWords s
+        cBytes = countBytes s
+
+totalLCB :: [(Int,Int,Int)] -> (Int,Int,Int)
+totalLCB = foldl (\(a,b,c) (x,y,z) -> (a+x, b+y, c+z)) (0,0,0)
+
+main' :: WcApp -> IO ()
+main' args = do
+    fps <- getArgs
+    files <- mapM B.readFile fps :: IO [ByteString]
+    let results = wcBS <$> files
+    let total = totalLCB results
+    sequence_ $ print <$> zip results fps
+    print (total, "total")
