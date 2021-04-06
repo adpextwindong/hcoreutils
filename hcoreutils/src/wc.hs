@@ -108,7 +108,7 @@ main = do
     let opts = appOpts args
     print opts
     let fps = appTargets args :: [FilePath]
-    files <- mapM B.readFile fps :: IO [ByteString]
+    files <- mapM B.readFile fps :: IO [ByteString] --TODO add error handling for files that can't be openned
     let results = wcBS opts <$> files
     let total = totalCounts results
     sequence_ $ printCounts opts <$> zip fps results
