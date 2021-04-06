@@ -58,13 +58,13 @@ appArgsParser = WcApp
 
 mainArgs :: IO WcApp
 mainArgs = do
-    args <- execParser opts
+    args <- execParser optsParse
     let opts = appOpts args
     if pEmptyOpts opts
     then return $ WcApp (mergeDefaultOpts opts) (appTargets args)
     else return args
      where
-        opts = info (appArgsParser <**> helper)
+        optsParse = info (appArgsParser <**> helper)
           ( fullDesc
           <> progDesc "wc - opt test"
           <> header "hey this is the header?" )
