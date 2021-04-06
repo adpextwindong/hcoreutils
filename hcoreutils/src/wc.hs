@@ -6,6 +6,8 @@ import qualified Data.ByteString.Char8 as B
 import qualified System.IO as SIO
 import Options.Applicative
 import Data.Semigroup ((<>))
+import Data.Maybe
+import Data.List
 
 data WcOpts = WcOpts { appLines :: Bool
                      , appWords :: Bool
@@ -74,27 +76,42 @@ mainArgs = do
 countLines = (-1 +) . length . B.lines
 countWords = length . B.words
 countBytes = B.length
+countMaxLineLength = foldl max 0 . fmap B.length . B.lines
 
-wcBS :: ByteString -> (Int, Int, Int)
-wcBS s = (cLines, cWords, cBytes)
+
+--Figure out chars vs bytes handling
+type FileWCCount = (Int,Int,Int,Int,Int)
+wcBS :: WcOpts -> ByteString -> FileWCCount
+wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
     where
-        cLines = countLines s
-        cWords = countWords s
-        cBytes = countBytes s
+        cLines = if appLines os then countLines s else 0
+        cWords = if appWords os then countWords s else 0
+        cBytes = if appBytes os then countBytes s else 0
+        cChars = if appBytes os then countBytes s else 0
+        cMaxLineLength = if appMaxLineLength os then countMaxLineLength s else 0
 
-totalLCB :: [(Int,Int,Int)] -> (Int,Int,Int)
-totalLCB = foldl (\(a,b,c) (x,y,z) -> (a+x, b+y, c+z)) (0,0,0)
+totalCounts :: [FileWCCount] -> FileWCCount
+totalCounts = foldl (\(a,b,c,d,maxLINESLeft) (x,y,z,t,maxLINESRight) -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
+
+printCounts :: WcOpts -> (FilePath, FileWCCount) -> IO ()
+printCounts os (fname, (l, w, b, c, mL)) = do
+                                sequence_ $ intersperse (putStr "\t") $ catMaybes acts
+                                putStr ("\t" ++ fname)
+                                putStrLn ""
+    where acts = [if appLines os then Just (putStr (show l)) else Nothing,
+                  if appWords os then Just (putStr (show w)) else Nothing,
+                  if appBytes os then Just (putStr (show b)) else Nothing,
+                  if appChars os then Just (putStr (show c)) else Nothing,
+                  if appMaxLineLength os then Just (putStr (show mL)) else Nothing ]
 
 main :: IO ()
 main = do
     args <- mainArgs
-    print $ appTargets args
-
-main' :: IO ()
-main' = do
-    fps <- getArgs
+    let opts = appOpts args
+    print opts
+    let fps = appTargets args :: [FilePath]
     files <- mapM B.readFile fps :: IO [ByteString]
-    let results = wcBS <$> files
-    let total = totalLCB results
-    sequence_ $ print <$> zip results fps
-    print (total, "total")
+    let results = wcBS opts <$> files
+    let total = totalCounts results
+    sequence_ $ (printCounts opts) <$> zip fps results
+    printCounts opts ("total", total)
