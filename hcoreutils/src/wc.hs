@@ -35,6 +35,15 @@ appOptsParser = WcOpts
            <*> argpHelp
            <*> argpVersion
 
+pEmptyOpts :: WcOpts -> Bool
+pEmptyOpts (WcOpts False False False False False _ _ ) = True
+pEmptyOpts _ = False
+
+mergeDefaultOpts opts = WcOpts True True True True False optsH optsV
+    where
+        optsH = appHelp opts
+        optsV = appVersion opts
+
 argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "FILES...") )
 
@@ -49,7 +58,12 @@ appArgsParser = WcApp
       <*> argpMTargets
 
 mainArgs :: IO WcApp
-mainArgs = execParser opts
+mainArgs = do
+    args <- execParser opts
+    let opts = appOpts args
+    if pEmptyOpts opts
+    then return $ WcApp (mergeDefaultOpts opts) (appTargets args)
+    else return args
      where
         opts = info (appArgsParser <**> helper)
           ( fullDesc
