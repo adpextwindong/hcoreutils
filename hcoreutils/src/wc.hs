@@ -7,11 +7,11 @@ import qualified System.IO as SIO
 import Options.Applicative
 import Data.Semigroup ((<>))
 
-data WcOpts = WcOpts { appBytes :: Bool
-                     , appChars :: Bool
-                     , appLines :: Bool
-                     , appMaxLineLength :: Bool
+data WcOpts = WcOpts { appLines :: Bool
                      , appWords :: Bool
+                     , appBytes :: Bool
+                     , appChars :: Bool
+                     , appMaxLineLength :: Bool
                      , appHelp :: Bool
                      , appVersion :: Bool
                      } deriving Show
@@ -27,11 +27,11 @@ argpVersion         = switch ( long "help" <> help "output version information a
 
 appOptsParser :: Parser WcOpts
 appOptsParser = WcOpts
-           <$> argpBytes
-           <*> argpChars
-           <*> argpLines
-           <*> argpMaxLineLength
+           <$> argpLines
            <*> argpWords
+           <*> argpBytes
+           <*> argpChars
+           <*> argpMaxLineLength
            <*> argpHelp
            <*> argpVersion
 
