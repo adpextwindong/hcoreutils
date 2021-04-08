@@ -117,11 +117,12 @@ printCounts os (fname, (l, w, b, c, mL)) = do
                                 sequence_ $ intersperse (putStr "\t") $ catMaybes acts
                                 putStr ("\t" ++ fname)
                                 putStrLn ""
-    where acts = [if appLines os then Just (putStr (show l)) else Nothing,
-                  if appWords os then Just (putStr (show w)) else Nothing,
-                  if appBytes os then Just (putStr (show b)) else Nothing,
-                  if appChars os then Just (putStr (show c)) else Nothing,
-                  if appMaxLineLength os then Just (putStr (show mL)) else Nothing ]
+    where mPrint val = Just (putStr (show val))
+          acts = [if appLines os then mPrint l else Nothing,
+                  if appWords os then mPrint w else Nothing,
+                  if appBytes os then mPrint b else Nothing,
+                  if appChars os then mPrint c else Nothing,
+                  if appMaxLineLength os then mPrint mL else Nothing ]
 
 main :: IO ()
 main = do
