@@ -5,14 +5,17 @@ import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Data.Maybe
 import Data.List
+import System.Exit (exitFailure, exitSuccess)
 
-data WcOpts = WcOpts { appLines :: Bool
+data WcOpts = WcOpts {
+                       appHelp :: Bool
+                     , appVersion :: Bool
+                     ----------------------
+                     , appLines :: Bool
                      , appWords :: Bool
                      , appBytes :: Bool
                      , appChars :: Bool
                      , appMaxLineLength :: Bool
-                     , appHelp :: Bool
-                     , appVersion :: Bool
                      } deriving Show
 
 argpBytes :: Parser Bool
@@ -33,20 +36,20 @@ argpVersion         = switch ( long "help" <> help "output version information a
 
 appOptsParser :: Parser WcOpts
 appOptsParser = WcOpts
-           <$> argpLines
+           <$> argpHelp
+           <*> argpVersion
+           <*> argpLines
            <*> argpWords
            <*> argpBytes
            <*> argpChars
            <*> argpMaxLineLength
-           <*> argpHelp
-           <*> argpVersion
 
 pEmptyOpts :: WcOpts -> Bool
-pEmptyOpts (WcOpts False False False False False _ _ ) = True
+pEmptyOpts (WcOpts _ _ False False False False False) = True
 pEmptyOpts _ = False
 
-mergeDefaultOpts :: WcOpts -> WcOpts
-mergeDefaultOpts opts = WcOpts True True True True False optsH optsV
+mergeDefaultOpts :: WcOpts -> WcOpts          --Lines Words Bytes
+mergeDefaultOpts opts = WcOpts optsH optsV True True True True False
     where
         optsH = appHelp opts
         optsV = appVersion opts
@@ -121,10 +124,20 @@ main :: IO ()
 main = do
     args <- mainArgs
     let opts = appOpts args
-    print opts
-    let fps = appTargets args :: [FilePath]
-    files <- mapM B.readFile fps :: IO [ByteString] --TODO add error handling for files that can't be openned
+    print opts --TODO get rid of this once everything is stable
+    main' args
+
+main' :: WcApp -> IO()
+main' (WcApp (WcOpts True _ _ _ _ _ _) _) = undefined --show help or some shit TODO reorder this
+main' (WcApp (WcOpts _ True _ _ _ _ _) _) = undefined --show help or some shit TODO reorder this
+
+main' (WcApp opts []) = undefined --TODO readfrom STDIN
+
+main' (WcApp opts targets) = do
+    files <- mapM B.readFile targets :: IO [ByteString]
+    --TODO add error handling for files that can't be openned
     let results = wcBS opts <$> files
     let total = totalCounts results
-    sequence_ $ printCounts opts <$> zip fps results
+    sequence_ $ printCounts opts <$> zip targets results
     printCounts opts ("total", total)
+    exitSuccess
