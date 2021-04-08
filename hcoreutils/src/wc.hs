@@ -67,6 +67,12 @@ appArgsParser = WcApp
       <$> appOptsParser
       <*> argpMTargets
 
+optsParse = info (appArgsParser <**> helper)
+  ( fullDesc
+  <> header "wc - print newline, word, and byte counts for each file"
+  <> progDesc "Haskell coreutils by George Takumi Crary" --TODO figure out how to build a usage string from this
+  )
+
 mainArgs :: IO WcApp
 mainArgs = do
     args <- execParser optsParse
@@ -74,11 +80,7 @@ mainArgs = do
     if pEmptyOpts opts
     then return $ WcApp (mergeDefaultOpts opts) (appTargets args)
     else return args
-     where
-        optsParse = info (appArgsParser <**> helper)
-          ( fullDesc
-          <> progDesc "wc - opt test"
-          <> header "hey this is the header?" )
+
 --OPTION PARSING----------------------------------------------------------------
 
 countLines :: ByteString -> Int
