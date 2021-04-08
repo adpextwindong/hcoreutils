@@ -30,9 +30,9 @@ argpWords :: Parser Bool
 argpWords           = switch ( short 'w' <> long "words" <> help "print the word counts" )
 
 argpHelp :: Parser Bool
-argpHelp            = switch ( long "help" <> help "display this help and exit" )
+argpHelp            = switch ( short 'h' <> long "help" <> help "display this help and exit" )
 argpVersion :: Parser Bool
-argpVersion         = switch ( long "help" <> help "output version information and exit" )
+argpVersion         = switch ( short 'v' <> long "version" <> help "output version information and exit" )
 
 appOptsParser :: Parser WcOpts
 appOptsParser = WcOpts
@@ -67,6 +67,7 @@ appArgsParser = WcApp
       <$> appOptsParser
       <*> argpMTargets
 
+optsParse :: ParserInfo WcApp
 optsParse = info (appArgsParser <**> helper)
   ( fullDesc
   <> header "wc - print newline, word, and byte counts for each file"
