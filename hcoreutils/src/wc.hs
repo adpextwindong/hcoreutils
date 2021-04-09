@@ -103,17 +103,20 @@ wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
         cChars = if appBytes os then countBytes s else 0
         cMaxLineLength = if appMaxLineLength os then countMaxLineLength s else 0
 
-printCounts :: WcOpts -> (FilePath, FileWCCount) -> IO ()
-printCounts os (fname, (l, w, b, c, mL)) = do
-                                sequence_ $ intersperse (putStr "\t") $ catMaybes acts
-                                putStr ("\t" ++ fname)
-                                putStrLn ""
-    where mPrint val = Just (putStr (show val))
-          acts = [if appLines os then mPrint l else Nothing,
+printCounts :: (FilePath, FileWCCount) -> ReaderT WcOpts IO ()
+printCounts (fname, (l, w, b, c, mL)) = do
+    os <- ask
+    liftIO $ do
+        let acts = [if appLines os then mPrint l else Nothing,
                   if appWords os then mPrint w else Nothing,
                   if appBytes os then mPrint b else Nothing,
                   if appChars os then mPrint c else Nothing,
                   if appMaxLineLength os then mPrint mL else Nothing ]
+
+        sequence_ $ intersperse (putStr "\t") $ catMaybes acts
+        putStr ("\t" ++ fname)
+        putStrLn ""
+        where mPrint val = Just (putStr (show val))
 
 main :: IO ()
 main = do
@@ -130,8 +133,10 @@ main' targets = do
     opts <- ask
     files <- liftIO $ mapM B.readFile targets
     --TODO add error handling for files that can't be openned
-    let results = wcBS opts <$> files
+    let results = (wcBS opts) <$> files
     let total = totalCounts results
-    liftIO $ sequence_ $ printCounts opts <$> zip targets results
-    liftIO $ printCounts opts ("total", total)
+
+    sequence_ $ printCounts <$> zip targets results
+    printCounts ("total", total)
+
     liftIO $ exitSuccess
