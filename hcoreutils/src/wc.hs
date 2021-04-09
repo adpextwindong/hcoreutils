@@ -7,16 +7,15 @@ import Data.Maybe
 import Data.List
 import System.Exit (exitFailure, exitSuccess)
 
-data WcOpts = WcOpts {
-                       appHelp :: Bool
-                     , appVersion :: Bool
-                     ----------------------
-                     , appLines :: Bool
+data WcOpts = WcOpts { appLines :: Bool
                      , appWords :: Bool
                      , appBytes :: Bool
                      , appChars :: Bool
                      , appMaxLineLength :: Bool
                      } deriving Show
+
+defaultOpts :: WcOpts --Lines Words Bytes
+defaultOpts = WcOpts True True True False False
 
 argpBytes :: Parser Bool
 argpBytes           = switch ( short 'c' <> long "bytes" <> help "print the byte counts" )
@@ -29,30 +28,17 @@ argpMaxLineLength   = switch ( short 'L' <> long "max-line-length" <> help "prin
 argpWords :: Parser Bool
 argpWords           = switch ( short 'w' <> long "words" <> help "print the word counts" )
 
-argpHelp :: Parser Bool
-argpHelp            = switch ( short 'h' <> long "help" <> help "display this help and exit" )
-argpVersion :: Parser Bool
-argpVersion         = switch ( short 'v' <> long "version" <> help "output version information and exit" )
-
 appOptsParser :: Parser WcOpts
 appOptsParser = WcOpts
-           <$> argpHelp
-           <*> argpVersion
-           <*> argpLines
+           <$> argpLines
            <*> argpWords
            <*> argpBytes
            <*> argpChars
            <*> argpMaxLineLength
 
 pEmptyOpts :: WcOpts -> Bool
-pEmptyOpts (WcOpts _ _ False False False False False) = True
+pEmptyOpts (WcOpts False False False False False) = True
 pEmptyOpts _ = False
-
-mergeDefaultOpts :: WcOpts -> WcOpts          --Lines Words Bytes
-mergeDefaultOpts opts = WcOpts optsH optsV True True True True False
-    where
-        optsH = appHelp opts
-        optsV = appVersion opts
 
 argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "FILES...") )
@@ -68,18 +54,19 @@ appArgsParser = WcApp
       <*> argpMTargets
 
 optsParse :: ParserInfo WcApp
-optsParse = info (appArgsParser <**> helper)
-  ( fullDesc
-  <> header "wc - print newline, word, and byte counts for each file"
-  <> progDesc "Haskell coreutils by George Takumi Crary" --TODO figure out how to build a usage string from this
-  )
+optsParse =
+    info (helper <*> versionOption <*> appArgsParser)
+      ( fullDesc <> header "wc - print newline, word, and byte counts for each file" <>
+        progDesc "Haskell coreutils by George Takumi Crary")
+    where
+        versionOption :: Parser (a -> a)
+        versionOption = infoOption "0.0.1" (short 'v' <> long "version" <> help "Show version")
 
 mainArgs :: IO WcApp
 mainArgs = do
     args <- execParser optsParse
-    let opts = appOpts args
-    if pEmptyOpts opts
-    then return $ WcApp (mergeDefaultOpts opts) (appTargets args)
+    if pEmptyOpts $ appOpts args
+    then return $ WcApp defaultOpts $ appTargets args
     else return args
 
 --OPTION PARSING----------------------------------------------------------------
@@ -98,6 +85,12 @@ countMaxLineLength = foldl max 0 . fmap B.length . B.lines
 --TODO Figure out chars vs bytes handling
 
 type FileWCCount = (Int,Int,Int,Int,Int)
+
+totalCounts :: [FileWCCount] -> FileWCCount
+totalCounts = foldl (\(a,b,c,d,maxLINESLeft)
+                      (x,y,z,t,maxLINESRight)
+                   -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
+
 wcBS :: WcOpts -> ByteString -> FileWCCount
 wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
     where
@@ -106,11 +99,6 @@ wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
         cBytes = if appBytes os then countBytes s else 0
         cChars = if appBytes os then countBytes s else 0
         cMaxLineLength = if appMaxLineLength os then countMaxLineLength s else 0
-
-totalCounts :: [FileWCCount] -> FileWCCount
-totalCounts = foldl (\(a,b,c,d,maxLINESLeft)
-                      (x,y,z,t,maxLINESRight)
-                   -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
 
 printCounts :: WcOpts -> (FilePath, FileWCCount) -> IO ()
 printCounts os (fname, (l, w, b, c, mL)) = do
@@ -132,9 +120,6 @@ main = do
     main' args
 
 main' :: WcApp -> IO()
-main' (WcApp (WcOpts True _ _ _ _ _ _) _) = undefined --show help or some shit TODO reorder this
-main' (WcApp (WcOpts _ True _ _ _ _ _) _) = undefined --show help or some shit TODO reorder this
-
 main' (WcApp opts []) = undefined --TODO readfrom STDIN
 
 main' (WcApp opts targets) = do
