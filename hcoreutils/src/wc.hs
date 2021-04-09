@@ -130,7 +130,7 @@ main = do
 main' :: [FilePath] -> ReaderT WcOpts IO()
 main' [] = do
     opts <- ask
-    stdinContent <- liftIO $ B.getContents
+    stdinContent <- liftIO B.getContents
     let result = wcBS opts stdinContent
     printCounts ("", result)
 
@@ -138,7 +138,7 @@ main' targets = do
     opts <- ask
     files <- liftIO $ mapM B.readFile targets
     --TODO add error handling for files that can't be openned
-    let results = (wcBS opts) <$> files
+    let results = wcBS opts <$> files
     let total = totalCounts results
 
     sequence_ $ printCounts <$> zip targets results
