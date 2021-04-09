@@ -72,6 +72,7 @@ mainArgs = do
 
 --OPTION PARSING----------------------------------------------------------------
 
+--TODO figure out this off by one issue depending on platform
 countLines :: ByteString -> Int
 countLines = (-1 +) . length . B.lines
 
@@ -93,7 +94,6 @@ totalCounts = foldl (\(a,b,c,d,maxLINESLeft)
                    -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
 
 
-------------- TODO Reader these two functions as they need WcOpts
 wcBS :: WcOpts -> ByteString -> FileWCCount
 wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
     where
@@ -125,9 +125,14 @@ main = do
     let targets = appTargets args
     print opts --TODO get rid of this once everything is stable
     runReaderT (main' targets) opts
+    exitSuccess
 
 main' :: [FilePath] -> ReaderT WcOpts IO()
-main' [] = undefined --TODO readfrom STDIN
+main' [] = do
+    opts <- ask
+    stdinContent <- liftIO $ B.getContents
+    let result = wcBS opts stdinContent
+    printCounts ("", result)
 
 main' targets = do
     opts <- ask
@@ -138,5 +143,3 @@ main' targets = do
 
     sequence_ $ printCounts <$> zip targets results
     printCounts ("total", total)
-
-    liftIO $ exitSuccess
