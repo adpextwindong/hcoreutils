@@ -6,6 +6,7 @@ import Options.Applicative
 import Data.Maybe
 import Data.List
 import System.Exit (exitFailure, exitSuccess)
+import Control.Monad.Reader
 
 data WcOpts = WcOpts { appLines :: Bool
                      , appWords :: Bool
@@ -91,6 +92,8 @@ totalCounts = foldl (\(a,b,c,d,maxLINESLeft)
                       (x,y,z,t,maxLINESRight)
                    -> (a+x, b+y, c+z, d+t, max maxLINESLeft maxLINESRight)) (0,0,0,0,0)
 
+
+------------- TODO Reader these two functions as they need WcOpts
 wcBS :: WcOpts -> ByteString -> FileWCCount
 wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
     where
@@ -116,17 +119,19 @@ main :: IO ()
 main = do
     args <- mainArgs
     let opts = appOpts args
+    let targets = appTargets args
     print opts --TODO get rid of this once everything is stable
-    main' args
+    runReaderT (main' targets) opts
 
-main' :: WcApp -> IO()
-main' (WcApp opts []) = undefined --TODO readfrom STDIN
+main' :: [FilePath] -> ReaderT WcOpts IO()
+main' [] = undefined --TODO readfrom STDIN
 
-main' (WcApp opts targets) = do
-    files <- mapM B.readFile targets :: IO [ByteString]
+main' targets = do
+    opts <- ask
+    files <- liftIO $ mapM B.readFile targets
     --TODO add error handling for files that can't be openned
     let results = wcBS opts <$> files
     let total = totalCounts results
-    sequence_ $ printCounts opts <$> zip targets results
-    printCounts opts ("total", total)
-    exitSuccess
+    liftIO $ sequence_ $ printCounts opts <$> zip targets results
+    liftIO $ printCounts opts ("total", total)
+    liftIO $ exitSuccess
