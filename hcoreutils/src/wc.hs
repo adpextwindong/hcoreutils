@@ -123,7 +123,6 @@ main = do
     args <- mainArgs
     let opts = appOpts args
     let targets = appTargets args
-    print opts --TODO get rid of this once everything is stable
     runReaderT (main' targets) opts
     exitSuccess
 
