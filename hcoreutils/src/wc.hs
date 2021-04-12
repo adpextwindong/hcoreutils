@@ -7,6 +7,8 @@ import Data.Maybe
 import Data.List
 import System.Exit (exitFailure, exitSuccess)
 import Control.Monad.Reader
+import Control.Exception
+import Data.Either
 
 data WcOpts = WcOpts { appLines :: Bool
                      , appWords :: Bool
@@ -142,3 +144,19 @@ main' targets = do
 
     sequence_ $ printCounts <$> zip targets results
     printCounts ("total", total)
+
+tsfileHandler :: FilePath -> IO (Either ByteString String)
+tsfileHandler fp = flip catch (\e -> do let err = show (e :: IOException)
+                                        return (Right ("wc: " ++ fp ++ ": No such file or directory")))
+                                        -- TODO add handling if its a directory FP
+                              (fmap Left (B.readFile fp))
+
+main2 :: [FilePath] -> ReaderT WcOpts IO()
+main2 targets = do
+    opts <- ask
+    liftIO $ do eFiles <- mapM tsfileHandler targets
+                print $ lefts eFiles
+                print "\n"
+                print "Unreachables:"
+                print $ rights eFiles
+    return ()
