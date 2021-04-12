@@ -72,9 +72,9 @@ mainArgs = do
 
 --OPTION PARSING----------------------------------------------------------------
 
---TODO figure out this off by one issue depending on platform
+--Strictly based on '\n' newlines not '\r' because of ByteString
 countLines :: ByteString -> Int
-countLines = (-1 +) . length . B.lines
+countLines = length . B.lines
 
 countWords :: ByteString -> Int
 countWords = length . B.words
