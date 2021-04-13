@@ -107,8 +107,8 @@ wcBS os s = (cLines, cWords, cBytes, cChars, cMaxLineLength)
         cChars = if appBytes os then countBytes s else 0
         cMaxLineLength = if appMaxLineLength os then countMaxLineLength s else 0
 
-printCounts :: (FilePath, FileWCCount) -> ReaderT WcOpts IO ()
-printCounts (fname, (l, w, b, c, mL)) = do
+printCounts :: FilePath -> FileWCCount -> ReaderT WcOpts IO ()
+printCounts fname (l, w, b, c, mL) = do
     os <- ask
     liftIO $ do
         let acts = [if appLines os then mPrint l else Nothing,
@@ -142,14 +142,14 @@ wcNoReadfmt fp
 
 printResult :: (Either FileWCCount String, FilePath) -> ReaderT WcOpts IO ()
 printResult (Right s,_) = liftIO $ print s
-printResult (Left cnts, fp) = printCounts (fp, cnts)
+printResult (Left cnts, fp) = printCounts fp cnts
 
 main' :: [FilePath] -> ReaderT WcOpts IO()
 main' [] = do
     opts <- ask
     stdinContent <- liftIO B.getContents
     let result = wcBS opts stdinContent
-    printCounts ("", result)
+    printCounts "" result
 
 main' targets = do
     opts <- ask
@@ -157,4 +157,4 @@ main' targets = do
     let eResults = first (wcBS opts) <$> eFiles
     let total = totalCounts $ lefts eResults
     sequence_ $ printResult <$> zip eResults targets
-    printCounts ("total", total)
+    printCounts "total" total
