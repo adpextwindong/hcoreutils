@@ -2,6 +2,7 @@ module Main where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Monoid
 import Options.Applicative
 import Data.Maybe
 import Data.List

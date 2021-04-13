@@ -1,6 +1,7 @@
 module Main where
 
 import System.Exit (exitSuccess)
+import Data.Monoid
 import Options.Applicative
 
 optsParse =
