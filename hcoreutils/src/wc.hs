@@ -5,6 +5,7 @@ import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Data.Maybe
 import Data.List
+import Data.Bifunctor
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath
 import Control.Monad.Reader
@@ -129,6 +130,20 @@ main = do
     runReaderT (main' targets) opts
     exitSuccess
 
+tsfileHandler :: FilePath -> IO (Either ByteString String)
+tsfileHandler fp = handle (\e -> do let _ = show (e :: IOException)
+                                 return (Right (wcNoReadfmt fp)))
+                              (fmap Left (B.readFile fp))
+
+wcNoReadfmt :: FilePath -> String
+wcNoReadfmt fp
+    | hasTrailingPathSeparator fp = "wc: " ++ fp ++ ": Is a directory"
+    | otherwise = "wc: " ++ fp ++ ": No such file or directory"
+
+printResult :: (Either FileWCCount String, FilePath) -> ReaderT WcOpts IO ()
+printResult (Right s,_) = liftIO $ print s
+printResult (Left cnts, fp) = printCounts (fp, cnts)
+
 main' :: [FilePath] -> ReaderT WcOpts IO()
 main' [] = do
     opts <- ask
@@ -138,29 +153,8 @@ main' [] = do
 
 main' targets = do
     opts <- ask
-    files <- liftIO $ mapM B.readFile targets
-    --TODO add error handling for files that can't be openned
-    let results = wcBS opts <$> files
-    let total = totalCounts results
-
-    sequence_ $ printCounts <$> zip targets results
+    eFiles <- liftIO $ mapM tsfileHandler targets
+    let eResults = first (wcBS opts) <$> eFiles
+    let total = totalCounts $ lefts eResults
+    sequence_ $ printResult <$> zip eResults targets
     printCounts ("total", total)
-
-tsfileHandler :: FilePath -> IO (Either ByteString String)
-tsfileHandler fp = flip catch (\e -> do let err = show (e :: IOException)
-                                        return $ Right $ wcNoReadfmt fp)
-                              (fmap Left (B.readFile fp))
-
-wcNoReadfmt fp
-    | hasTrailingPathSeparator fp = "wc: " ++ fp ++ ": Is a directory"
-    | otherwise = "wc: " ++ fp ++ ": No such file or directory"
-
-main2 :: [FilePath] -> ReaderT WcOpts IO()
-main2 targets = do
-    opts <- ask
-    liftIO $ do eFiles <- mapM tsfileHandler targets
-                print $ lefts eFiles
-                print "\n"
-                print "Unreachables:"
-                print $ rights eFiles
-    return ()
