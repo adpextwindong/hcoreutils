@@ -59,10 +59,9 @@ main = do
     exitSuccess
 
 main' :: [FilePath] -> ReaderT BnOpts IO()
-main' [] = do
-    liftIO $ do
-        print "basename: missing operand"
-        print "Try 'basename --help' for more information."
+main' [] = liftIO $ do
+    print "basename: missing operand"
+    print "Try 'basename --help' for more information."
 
 main' targets = do
     opts <- ask

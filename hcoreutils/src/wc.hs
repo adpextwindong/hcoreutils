@@ -7,7 +7,7 @@ import Options.Applicative
 import Data.Maybe
 import Data.List
 import Data.Bifunctor
-import System.Exit (exitFailure, exitSuccess)
+import System.Exit (exitSuccess)
 import System.FilePath
 import Control.Monad.Reader
 import Control.Exception
