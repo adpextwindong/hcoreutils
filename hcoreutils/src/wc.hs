@@ -6,6 +6,7 @@ import Options.Applicative
 import Data.Maybe
 import Data.List
 import System.Exit (exitFailure, exitSuccess)
+import System.FilePath
 import Control.Monad.Reader
 import Control.Exception
 import Data.Either
@@ -147,9 +148,12 @@ main' targets = do
 
 tsfileHandler :: FilePath -> IO (Either ByteString String)
 tsfileHandler fp = flip catch (\e -> do let err = show (e :: IOException)
-                                        return (Right ("wc: " ++ fp ++ ": No such file or directory")))
-                                        -- TODO add handling if its a directory FP
+                                        return $ Right $ wcNoReadfmt fp)
                               (fmap Left (B.readFile fp))
+
+wcNoReadfmt fp
+    | hasTrailingPathSeparator fp = "wc: " ++ fp ++ ": Is a directory"
+    | otherwise = "wc: " ++ fp ++ ": No such file or directory"
 
 main2 :: [FilePath] -> ReaderT WcOpts IO()
 main2 targets = do
