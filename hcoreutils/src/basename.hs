@@ -2,22 +2,25 @@ module Main where
 
 import Options.Applicative
 import System.Exit (exitSuccess)
+import System.FilePath
 import Control.Monad.Reader
+import Data.List
 
-data BnOpts = BnOpts { appSuffixes :: [String],
-                       appNULTerminated :: Bool
+data BnOpts = BnOpts { appSuffix :: String
+                      ,appNULTerminated :: Bool
                      } deriving Show
 
 defaultOpts :: BnOpts
 defaultOpts = BnOpts [] False
 
 argpNULTerminated :: Parser Bool
-argpNULTerminated = switch ( short 'm' <> long "chars" <> help "print the character counts" )
+argpNULTerminated = switch ( short 'z' <> long "zero" <> help "end each output line with NUL, not newline" )
 
-argpSuffixes :: Parser [String]
-argpSuffixes = many ( strOption (short 's' <> long "suffix"
+argpSuffixes :: Parser String
+argpSuffixes = strOption (short 's' <> long "suffix"
                                    <> help "remove a trailing SUFFIX; implies -a"
-                                   <> metavar "SUFFIXES..."))
+                                   <> metavar "SUFFIX..."
+                                   <> value "")
 
 argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "PATHS..."))
@@ -51,15 +54,25 @@ main = do
     args <- execParser optsParse
     let opts = appOpts args
     let targets = appTargets args
-    print opts
-    print targets
     runReaderT (main' targets) opts
     exitSuccess
 
 main' :: [FilePath] -> ReaderT BnOpts IO()
 main' [] = do
-    opts <- ask
-    return ()
+    liftIO $ do
+        print "basename: missing operand"
+        print "Try 'basename --help' for more information."
+
 main' targets = do
     opts <- ask
-    return ()
+    let results = basenamed opts <$> targets
+    liftIO $ if appNULTerminated opts
+             then mapM_ putStr $ intersperse "\NUL" results
+             else mapM_ putStrLn results
+
+stripSuffix :: String -> String -> String
+stripSuffix suffix = reverse . drop (length suffix) . reverse
+
+basenamed :: BnOpts -> FilePath -> FilePath
+basenamed (BnOpts suffix _) fp = stripSuffix suffix fn
+    where fn = snd . splitFileName $ fp
