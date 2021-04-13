@@ -130,10 +130,10 @@ main = do
     runReaderT (main' targets) opts
     exitSuccess
 
-tsfileHandler :: FilePath -> IO (Either ByteString String)
-tsfileHandler fp = handle (\e -> do let _ = show (e :: IOException)
-                                 return (Right (wcNoReadfmt fp)))
-                              (fmap Left (B.readFile fp))
+eitherReadFile :: (FilePath -> String) -> FilePath -> IO (Either ByteString String)
+eitherReadFile fpHandler fp = handle (\e -> do let _ = show (e :: IOException)
+                                               return (Right (fpHandler fp)))
+                                     (fmap Left (B.readFile fp))
 
 wcNoReadfmt :: FilePath -> String
 wcNoReadfmt fp
@@ -153,7 +153,7 @@ main' [] = do
 
 main' targets = do
     opts <- ask
-    eFiles <- liftIO $ mapM tsfileHandler targets
+    eFiles <- liftIO $ mapM (eitherReadFile wcNoReadfmt) targets
     let eResults = first (wcBS opts) <$> eFiles
     let total = totalCounts $ lefts eResults
     sequence_ $ printResult <$> zip eResults targets
