@@ -10,6 +10,7 @@ import Data.List
 data BnOpts = BnOptsLong {
                     appLongSuffix :: String
                    ,appLongNULTerminated :: Bool
+                   ,appTargets :: [String]
                 }
             | BnOptsShort {
                     appTName :: String
@@ -26,12 +27,10 @@ bnOptsLongParser :: Parser BnOpts
 bnOptsLongParser = BnOptsLong
                 <$> argpSuffix
                 <*> argpNULTerminated
+                <*> argpMTargets
 
 bnOptsParser :: Parser BnOpts
 bnOptsParser = bnOptsShortParser <|> bnOptsLongParser
-
-defaultOpts :: BnOpts
-defaultOpts = BnOptsShort [] []
 
 argpNULTerminated :: Parser Bool
 argpNULTerminated = switch ( short 'z' <> long "zero" <> help "end each output line with NUL, not newline" )
@@ -45,24 +44,9 @@ argpSuffix = strOption (short 's' <> long "suffix"
 argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "PATHS..."))
 
-appOptsParser :: Parser BnOpts
-appOptsParser = BnOptsLong
-           <$> argpSuffix
-           <*> argpNULTerminated
-
-data BnApp = BnApp {
-                     appOpts :: BnOpts
-                   , appTargets :: [FilePath]
-                   } deriving Show
-
-appArgsParser :: Parser BnApp
-appArgsParser = BnApp
-      <$> bnOptsParser
-      <*> argpMTargets
-
-optsParse :: ParserInfo BnApp
+optsParse :: ParserInfo BnOpts
 optsParse =
-    info (helper <*> versionOption <*> appArgsParser)
+    info (helper <*> versionOption <*> bnOptsParser)
       ( fullDesc <> header "basename - strip directory and suffix from filenames" <>
         progDesc "Haskell coreutils by George Takumi Crary")
     where
@@ -72,10 +56,7 @@ optsParse =
 main :: IO ()
 main = do
     args <- execParser optsParse
-    let opts = appOpts args
-    let targets = appTargets args
-    print opts
-    print targets
+    print args
     -- TODO reformulate this to handle the new bnOpts type
     -- runReaderT (main' targets) opts
     exitSuccess
