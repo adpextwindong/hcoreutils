@@ -7,18 +7,37 @@ import System.FilePath
 import Control.Monad.Reader
 import Data.List
 
-data BnOpts = BnOpts { appSuffix :: String
-                      ,appNULTerminated :: Bool
-                     } deriving Show
+data BnOpts = BnOptsLong {
+                    appLongSuffix :: String
+                   ,appLongNULTerminated :: Bool
+                }
+            | BnOptsShort {
+                    appTName :: String
+                   ,appShortSuffix :: String
+                } deriving Show
+                     --TODO support the other style: NAME [SUFFIX]
+
+bnOptsShortParser :: Parser BnOpts
+bnOptsShortParser = BnOptsShort
+                <$> argument str (metavar "NAME")
+                <*> argument str (metavar "SUFFIX")
+
+bnOptsLongParser :: Parser BnOpts
+bnOptsLongParser = BnOptsLong
+                <$> argpSuffix
+                <*> argpNULTerminated
+
+bnOptsParser :: Parser BnOpts
+bnOptsParser = bnOptsShortParser <|> bnOptsLongParser
 
 defaultOpts :: BnOpts
-defaultOpts = BnOpts [] False
+defaultOpts = BnOptsShort [] []
 
 argpNULTerminated :: Parser Bool
 argpNULTerminated = switch ( short 'z' <> long "zero" <> help "end each output line with NUL, not newline" )
 
-argpSuffixes :: Parser String
-argpSuffixes = strOption (short 's' <> long "suffix"
+argpSuffix :: Parser String
+argpSuffix = strOption (short 's' <> long "suffix"
                                    <> help "remove a trailing SUFFIX; implies -a"
                                    <> metavar "SUFFIX..."
                                    <> value "")
@@ -27,8 +46,8 @@ argpMTargets :: Parser [FilePath]
 argpMTargets = many ( argument str (metavar "PATHS..."))
 
 appOptsParser :: Parser BnOpts
-appOptsParser = BnOpts
-           <$> argpSuffixes
+appOptsParser = BnOptsLong
+           <$> argpSuffix
            <*> argpNULTerminated
 
 data BnApp = BnApp {
@@ -38,7 +57,7 @@ data BnApp = BnApp {
 
 appArgsParser :: Parser BnApp
 appArgsParser = BnApp
-      <$> appOptsParser
+      <$> bnOptsParser
       <*> argpMTargets
 
 optsParse :: ParserInfo BnApp
@@ -55,7 +74,10 @@ main = do
     args <- execParser optsParse
     let opts = appOpts args
     let targets = appTargets args
-    runReaderT (main' targets) opts
+    print opts
+    print targets
+    -- TODO reformulate this to handle the new bnOpts type
+    -- runReaderT (main' targets) opts
     exitSuccess
 
 main' :: [FilePath] -> ReaderT BnOpts IO()
@@ -66,7 +88,7 @@ main' [] = liftIO $ do
 main' targets = do
     opts <- ask
     let results = basenamed opts <$> targets
-    liftIO $ if appNULTerminated opts
+    liftIO $ if appLongNULTerminated opts
              then mapM_ putStr $ intersperse "\NUL" results
              else mapM_ putStrLn results
 
@@ -74,5 +96,6 @@ stripSuffix :: String -> String -> String
 stripSuffix suffix = reverse . drop (length suffix) . reverse
 
 basenamed :: BnOpts -> FilePath -> FilePath
-basenamed (BnOpts suffix _) fp = stripSuffix suffix fn
-    where fn = snd . splitFileName $ fp
+basenamed _ fp = undefined
+-- basenamed (BnOpts suffix _) fp = stripSuffix suffix fn
+--     where fn = snd . splitFileName $ fp
