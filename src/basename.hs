@@ -1,10 +1,8 @@
 module Main where
 
-import Data.Monoid
 import Options.Applicative
 import System.Exit (exitSuccess)
 import System.FilePath
-import Control.Monad.Reader
 import Data.List
 
 data BnOpts = BnOptsLong {
@@ -16,7 +14,6 @@ data BnOpts = BnOptsLong {
                     appTName :: String
                    ,appShortSuffix :: String
                 } deriving Show
-                     --TODO support the other style: NAME [SUFFIX]
 
 bnOptsShortParser :: Parser BnOpts
 bnOptsShortParser = BnOptsShort
@@ -37,7 +34,7 @@ argpNULTerminated = switch ( short 'z' <> long "zero" <> help "end each output l
 
 argpSuffix :: Parser String
 argpSuffix = strOption (short 's' <> long "suffix"
-                                   <> help "remove a trailing SUFFIX; implies -a"
+                                   <> help "remove a trailing SUFFIX"
                                    <> metavar "SUFFIX..."
                                    <> value "")
 
@@ -57,26 +54,24 @@ main :: IO ()
 main = do
     args <- execParser optsParse
     print args
-    -- TODO reformulate this to handle the new bnOpts type
-    -- runReaderT (main' targets) opts
+    main' args
     exitSuccess
 
-main' :: [FilePath] -> ReaderT BnOpts IO()
-main' [] = liftIO $ do
+main' :: BnOpts -> IO()
+main' (BnOptsLong _ _ []) = do
     print "basename: missing operand"
     print "Try 'basename --help' for more information."
 
-main' targets = do
-    opts <- ask
-    let results = basenamed opts <$> targets
-    liftIO $ if appLongNULTerminated opts
-             then mapM_ putStr $ intersperse "\NUL" results
-             else mapM_ putStrLn results
+main' (BnOptsLong suffix nullt targets) = let results = basenamed suffix <$> targets in
+                                          if nullt
+                                               then mapM_ putStr $ intersperse "NUL" results
+                                               else mapM_ putStrLn results
+
+main' (BnOptsShort name suffix) = putStrLn $ basenamed suffix name
 
 stripSuffix :: String -> String -> String
 stripSuffix suffix = reverse . drop (length suffix) . reverse
 
-basenamed :: BnOpts -> FilePath -> FilePath
-basenamed _ fp = undefined
--- basenamed (BnOpts suffix _) fp = stripSuffix suffix fn
---     where fn = snd . splitFileName $ fp
+basenamed :: String -> FilePath -> FilePath
+basenamed suffix fp = stripSuffix suffix filename
+    where filename = snd . splitFileName $ fp
