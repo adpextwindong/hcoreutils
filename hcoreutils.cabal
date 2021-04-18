@@ -49,6 +49,7 @@ executable basename
 executable echo
   main-is:             src/echo.hs
   build-depends:       base >=4.9,
-                       optparse-applicative>=0.16.1.0
+                       optparse-applicative>=0.16.1.0,
+                       containers>=0.5.7.1
   default-language:    Haskell2010
   ghc-options:         -Wall -O3 -rtsopts
