@@ -61,6 +61,7 @@ main' :: EchoOpts -> IO ()
 main' (EchoOpts _ _ []) = return ()
 
 main' (EchoOpts pTrail True xs) = do
+    --Short circuit on the first string containing a \c escape sequence
     cEscapeOccured <- orM $ intersperse (putStr " " >> return False) $ interpretAsEscaped <$> xs
     putStr $ bool "\n" "" (pTrail && not cEscapeOccured)
 
