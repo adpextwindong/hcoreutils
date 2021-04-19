@@ -6,6 +6,7 @@ import Data.Bool
 import Data.List
 import Data.Char
 import Numeric
+import Control.Monad.Loops
 
 data EchoOpts = EchoOpts {
                     noTrailingNewline :: Bool,
@@ -52,21 +53,23 @@ optsParse =
 main :: IO ()
 main = do
     args <- execParser optsParse
+    print args
     main' args
-    --TODO impl
     exitSuccess
 
 main' :: EchoOpts -> IO ()
 main' (EchoOpts _ _ []) = return ()
 
-main' (EchoOpts pTrail pInterpretBackslashes xs) = do
-    let results = if pInterpretBackslashes
-                  then interpretAsEscaped <$> xs
-                  else putStr <$> xs
+main' (EchoOpts pTrail True xs) = do
+    cEscapeOccured <- orM $ intersperse (putStr " " >> return False) $ interpretAsEscaped <$> xs
+    putStr $ bool "\n" "" (pTrail && not cEscapeOccured)
+
+main' (EchoOpts pTrail False xs) = do
+    let results = putStr <$> xs
     sequence_ $ intersperse (putStr " ") results
     putStr $ bool "\n" "" pTrail
 
-interpretAsEscaped :: String -> IO ()
+interpretAsEscaped :: String -> IO Bool
 interpretAsEscaped ('\\':'0':xs) = putChar val >> interpretAsEscaped ( drop (length literal) xs)
     where literal = takeWhile isDigit . take 3 $ xs
           val = chr . fst . head . readHex $ literal
@@ -75,9 +78,11 @@ interpretAsEscaped ('\\':'x':xs) = putChar val >> interpretAsEscaped ( drop (len
     where literal = takeWhile isDigit . take 2 $ xs
           val = chr . fst . head . readHex $ literal
 
-interpretAsEscaped ('\\':x:xs) = putStr (escMap x) >> putStr xs
+--Termination cases
+interpretAsEscaped []           = return False
+interpretAsEscaped ('\\':'c':_) = return True
 
-interpretAsEscaped [] = return ()
+interpretAsEscaped ('\\':x:xs) = putStr (escMap x) >> interpretAsEscaped xs
 interpretAsEscaped s = putStr regular >> interpretAsEscaped startsWithEscaped
     where (regular,startsWithEscaped) = break (== '\\') s
 
