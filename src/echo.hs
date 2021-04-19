@@ -53,7 +53,6 @@ optsParse =
 main :: IO ()
 main = do
     args <- execParser optsParse
-    print args
     main' args
     exitSuccess
 
@@ -97,5 +96,3 @@ escMap 'r' = "\r"
 escMap 't' = "\t"
 escMap 'v' = "\v"
 escMap c = "\\" ++ [c]
-
--- Seems like \c in any interpretted string kills all further output which means we need to recurse on the args instead of mapM zzz
