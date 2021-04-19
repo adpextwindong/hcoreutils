@@ -1,17 +1,17 @@
 module Main where
 
 import System.Exit (exitSuccess)
-import Data.Monoid
 import Options.Applicative
 import Data.Bool
 import Data.List
-import qualified Data.Set as Set
+import Data.Char
+import Numeric
 
 data EchoOpts = EchoOpts {
                     noTrailingNewline :: Bool,
                     interpretBackslashEscapes :: Bool,
                     argEchos :: [String]
-                }
+                } deriving Show
 
 defaultOpts :: EchoOpts
 defaultOpts = EchoOpts False True []
@@ -61,44 +61,35 @@ main' (EchoOpts _ _ []) = return ()
 
 main' (EchoOpts pTrail pInterpretBackslashes xs) = do
     let results = if pInterpretBackslashes
-                  then handleBackslashes <$> xs
+                  then interpretAsEscaped <$> xs
                   else putStr <$> xs
     sequence_ $ intersperse (putStr " ") results
     putStr $ bool "\n" "" pTrail
 
+interpretAsEscaped :: String -> IO ()
+interpretAsEscaped ('\\':'0':xs) = putChar val >> interpretAsEscaped ( drop (length literal) xs)
+    where literal = takeWhile isDigit . take 3 $ xs
+          val = chr . fst . head . readHex $ literal
 
-handleBackslashes :: String -> IO ()
-handleBackslashes [] = return ()
-handleBackslashes (x:[]) = putStr [x]
-handleBackslashes s@(x:xs) = if pStringLiteral s
-                             then interpretAsEscaped s
-                             else putStr s
-    where pStringLiteral ts = head ts == '"' && last ts == '"' ||
-                             head ts == '\'' && last ts == '\''
+interpretAsEscaped ('\\':'x':xs) = putChar val >> interpretAsEscaped ( drop (length literal) xs)
+    where literal = takeWhile isDigit . take 2 $ xs
+          val = chr . fst . head . readHex $ literal
 
-interpretAsEscaped :: String -> IO () -- TODO perform the print here correctly
+interpretAsEscaped ('\\':x:xs) = putStr (escMap x) >> putStr xs
+
 interpretAsEscaped [] = return ()
-interpretAsEscaped ('\\':'\\':xs) = putChar '\\'
-{-
-interpretAsEscaped ('\\':xs) = mapping (head xs) >> interpretAsEscaped (tail xs) -- skip the next character
-    where
-        mapping x = if Set.member x interpSet
-                  then putChar $ escMap x
-                  else putChar x
--}
 interpretAsEscaped s = putStr regular >> interpretAsEscaped startsWithEscaped
     where (regular,startsWithEscaped) = break (== '\\') s
 
-interpSet = Set.fromList ['\\','a','b','f','n','r','t','v']
+escMap :: Char -> String
+escMap 'a' = "\a"
+escMap 'b' = "\b"
+escMap 'e' = "\ESC"
+escMap 'f' = "\f"
+escMap 'n' = "\n"
+escMap 'r' = "\r"
+escMap 't' = "\t"
+escMap 'v' = "\v"
+escMap c = "\\" ++ [c]
 
-escMap 'a' = '\a'
-escMap 'b' = '\b'
-escMap 'f' = '\f'
-escMap 'n' = '\n'
-escMap 'r' = '\r'
-escMap 't' = '\t'
-escMap 'v' = '\v'
-escMap c = c
-
---TODO handle octal/hexadecimal
 -- Seems like \c in any interpretted string kills all further output which means we need to recurse on the args instead of mapM zzz
