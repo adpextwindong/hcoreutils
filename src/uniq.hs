@@ -1,7 +1,9 @@
 module Main where
 
+import System.IO
 import System.Exit (exitSuccess)
 import Options.Applicative
+import Control.Monad
 -- import Data.Map
                                                 --NoSeperation for allDups
 data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated SeperationHandling
@@ -10,7 +12,7 @@ data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated Seperation
 --Maybe these clash
 data SeperationHandling = Prepend | Separate
     deriving Show
-data GroupHandling = SeparateGroups | PrependGroups | AppendGroups | BothGroups
+data GroupHandling = NoGroups | SeparateGroups | PrependGroups | AppendGroups | BothGroups
     deriving Show
 
 data UniqOpts = UniqOpts {                                  -- Corresponding GNU Uniq flags
@@ -40,8 +42,6 @@ optsParser = UniqOpts
             <*> nullTerminatedParser
             <*> checkCharsParser
 
-
-
 outputCountParser :: Parser Bool
 outputCountParser = switch ( short 'c' <> long "count" <> help "TODO prefix lines by the number of occurences" )
 
@@ -67,7 +67,7 @@ skipFieldsParser = option auto ( short 'f' <> long "skip-fields" <> value 0 <> h
 groupHandlingParser :: Parser GroupHandling
 groupHandlingParser = defaultGroupHandlingParser <|> separateGroupsParser <|> prependGroupsParser <|> appendGroupsParser <|> bothGroupsParser
     where
-        defaultGroupHandlingParser = flag' SeparateGroups ( long "group" )
+        defaultGroupHandlingParser = flag NoGroups SeparateGroups ( long "group" )
         separateGroupsParser = flag' SeparateGroups ( long "group=separate" )
         prependGroupsParser = flag' PrependGroups ( long "group=prepend" )
         appendGroupsParser = flag' AppendGroups ( long "group=append" )
@@ -90,7 +90,7 @@ checkCharsParser :: Parser (Maybe Int)
 checkCharsParser = optional ( option auto ( short 'w' <> long "check-chars" <> help "TODO compare no more than N characters in lines"))
 
 data UniqArgs = UniqArgs {
-                    opts :: UniqOpts,
+                    appOpts :: UniqOpts,
                     input :: Maybe FilePath,
                     output :: Maybe FilePath
                 } deriving Show
@@ -98,13 +98,13 @@ data UniqArgs = UniqArgs {
 argsParser :: Parser UniqArgs
 argsParser = UniqArgs
           <$> optsParser
-          <*> (optional $ argument str (metavar "INPUT"))
-          <*> (optional $ argument str (metavar "OUTPUT"))
+          <*> optional ( argument str (metavar "INPUT"))
+          <*> optional ( argument str (metavar "OUTPUT"))
 
 
-optsParse :: ParserInfo (a -> a)
+optsParse :: ParserInfo UniqArgs
 optsParse =
-    info (helper <*> versionOption)
+    info (helper <*> versionOption <*> argsParser)
       ( fullDesc <> header "uniq" <>
         progDesc "Haskell coreutils by George Takumi Crary")
     where
@@ -114,5 +114,29 @@ optsParse =
 
 main :: IO ()
 main = do
-    _ <- execParser optsParse
+    args <- execParser optsParse
+    inHandle <- do case input args of
+                        Just fp -> openFile fp ReadMode
+                        Nothing -> return stdin
+    outHandle <- do case output args of
+                        Just fp -> openFile fp WriteMode
+                        Nothing -> return stdout
+
+    main' (appOpts args) inHandle outHandle
     exitSuccess
+
+
+tossSeqRepeat :: Eq a => [a] -> [a]
+tossSeqRepeat (x:y:xs) = if x == y
+                      then tossSeqRepeat $ x:xs
+                      else x: tossSeqRepeat (y:xs)
+
+tossSeqRepeat x = x
+
+main' :: UniqOpts -> Handle -> Handle -> IO ()
+main' defaultOpts inHandle outHandle = do
+    mergedLines <- tossSeqRepeat . lines <$> hGetContents' inHandle
+    forM_ mergedLines $ \line -> do
+        hPutStrLn outHandle line
+
+main' opts inHandle outHandle = undefined
