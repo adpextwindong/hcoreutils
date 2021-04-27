@@ -4,6 +4,7 @@ import System.IO
 import System.Exit (exitSuccess)
 import Options.Applicative
 import Control.Monad
+import Data.Char
 -- import Data.Map
                                                 --NoSeperation for allDups
 data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated SeperationHandling | Grouped GroupHandling | Unique
@@ -126,6 +127,11 @@ tossSeqRepeat (x:y:xs) = if x == y
                       else x: tossSeqRepeat (y:xs)
 
 tossSeqRepeat x = x
+
+desiredCompare :: UniqOpts -> String -> String -> Ordering
+desiredCompare opt = if ignoreCase opt
+                then (\x y -> compare (map toLower x) (map toLower y))
+                else compare
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
 main' defaultOpts inHandle outHandle = do
