@@ -75,19 +75,19 @@ groupHandlingParser = defaultGroupHandlingParser <|> separateGroupsParser <|> pr
 
 
 ignoreCaseParser :: Parser Bool
-ignoreCaseParser = undefined
+ignoreCaseParser = switch ( short 'i' <> long "ignore-case" <> help "TODO ignore differences in case when comparing" )
 
 skipCharsParser :: Parser Int
-skipCharsParser = undefined
+skipCharsParser = option auto ( value 0 <> short 's' <> long "skip-chars" <> help "TODO avoid comparing the first N characters" )
 
 uniqueOnlyParser :: Parser Bool
-uniqueOnlyParser = undefined
+uniqueOnlyParser = switch ( short 'u' <> long "unique" <> help "TODO Only print unique lines" )
 
 nullTerminatedParser :: Parser Bool
-nullTerminatedParser = undefined
+nullTerminatedParser = switch ( short 'z' <> long "zero-temrinated" <> help "TODO line delimiter is NUL, not lewline")
 
 checkCharsParser :: Parser (Maybe Int)
-checkCharsParser = undefined
+checkCharsParser = optional ( option auto ( short 'w' <> long "check-chars" <> help "TODO compare no more than N characters in lines"))
 
 data UniqArgs = UniqArgs {
                     opts :: UniqOpts,
