@@ -128,10 +128,22 @@ tossSeqRepeat (x:y:xs) = if x == y
 
 tossSeqRepeat x = x
 
+-- Handles -i -s -w flags TODO look into skip-fields
 desiredCompare :: UniqOpts -> String -> String -> Ordering
-desiredCompare opt = if ignoreCase opt
-                then (\x y -> compare (map toLower x) (map toLower y))
-                else compare
+desiredCompare defaultOpts x y = compare x y
+desiredCompare opt xs ys = igf (limiter xs) (limiter ys)
+    where
+        igf = if ignoreCase opt
+              then (\x y -> compare (map toLower x) (map toLower y))
+              else compare
+        skipper = drop $ skipChars opt
+        checkLimit = case checkChars opt of
+                        Nothing -> id
+                        Just count -> if count == 0
+                                      then const []
+                                      else take count
+        limiter = checkLimit . skipper
+
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
 main' defaultOpts inHandle outHandle = do
