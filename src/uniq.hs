@@ -101,7 +101,6 @@ argsParser = UniqArgs
           <*> optional ( argument str (metavar "INPUT"))
           <*> optional ( argument str (metavar "OUTPUT"))
 
-
 optsParse :: ParserInfo UniqArgs
 optsParse =
     info (helper <*> versionOption <*> argsParser)
