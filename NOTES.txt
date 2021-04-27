@@ -1,3 +1,5 @@
 Resources:
 
 http://maizure.org/projects/decoded-gnu-coreutils/
+
+https://serokell.io/blog/haskell-with-utf8
