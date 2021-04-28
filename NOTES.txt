@@ -3,3 +3,5 @@ Resources:
 http://maizure.org/projects/decoded-gnu-coreutils/
 
 https://serokell.io/blog/haskell-with-utf8
+
+https://stackoverflow.com/questions/6011367/sorting-and-comparing-strings-by-locales-in-haskell/6011724
