@@ -128,6 +128,13 @@ tossSeqRepeat (x:y:xs) = if x == y
 
 tossSeqRepeat x = x
 
+skipNfields :: Int -> String -> String
+skipNfields n s = (iterate dropField s) !! n
+--TODO see if gnu uniq drops leading white space after dropping the fields
+
+dropField :: String -> String
+dropField = dropWhile isAlphaNum . dropWhile isSpace
+
 -- Handles -i -s -w flags TODO look into skip-fields
 desiredCompare :: UniqOpts -> String -> String -> Ordering
 desiredCompare defaultOpts x y = compare x y
@@ -136,13 +143,14 @@ desiredCompare opt xs ys = igf (limiter xs) (limiter ys)
         igf = if ignoreCase opt
               then (\x y -> compare (map toLower x) (map toLower y))
               else compare
-        skipper = drop $ skipChars opt
+        field_skipper = skipNfields $ skipFields opt
+        char_skipper = drop $ skipChars opt
         checkLimit = case checkChars opt of
                         Nothing -> id
                         Just count -> if count == 0
                                       then const []
                                       else take count
-        limiter = checkLimit . skipper
+        limiter = checkLimit . char_skipper . field_skipper
 
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
