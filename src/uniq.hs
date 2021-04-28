@@ -5,9 +5,11 @@ import System.Exit (exitSuccess)
 import Options.Applicative
 import Control.Monad
 import Data.Char
--- import Data.Map
+import Data.List
+import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
                                                 --NoSeperation for allDups
-data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated SeperationHandling | Grouped GroupHandling | Unique
+data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated SeperationHandling | Grouped GroupHandling | UniqueHandling
     deriving Show
 
 --Maybe these clash
@@ -48,7 +50,7 @@ outputDuplicatesParser = allDupsParser <|> oneEachDupsParser <|> allRepeatedPars
     where
         allDupsParser = flag NoDups AllDups ( short 'D' )
         oneEachDupsParser = flag' OneEachDups ( short 'd' )
-        uniqueOnlyParser = flag' Unique ( short 'u' <> long "unique" <> help "TODO Only print unique lines" )
+        uniqueOnlyParser = flag' UniqueHandling ( short 'u' <> long "unique" <> help "TODO Only print unique lines" )
 
 
 allRepeatedParser :: Parser DuplicateHandling
@@ -152,6 +154,24 @@ desiredCompare opt xs ys = igf (limiter xs) (limiter ys)
                                       else take count
         limiter = checkLimit . char_skipper . field_skipper
 
+type LineNumber = Int
+data Occurance = Unique LineNumber | Duplicated [LineNumber]
+    deriving Show
+
+filterUniqueOccs :: [Occurance] -> [Occurance]
+filterUniqueOccs xs = [x | x@(Unique {}) <- xs]
+
+filterDuplicatedOccs :: [Occurance] -> [Occurance]
+filterDuplicatedOccs xs = [x | x@(Duplicated {}) <- xs]
+
+addOccurance :: Occurance -> LineNumber -> Occurance
+addOccurance (Unique fstln) newln = Duplicated [fstln,newln]
+addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
+
+uniq :: [String] -> [String]
+uniq xs = undefined
+    where
+        ln_s_pairs = zip [1..] xs
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
 main' defaultOpts inHandle outHandle = do
