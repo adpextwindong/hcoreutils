@@ -137,14 +137,13 @@ skipNfields n s = (iterate dropField s) !! n
 dropField :: String -> String
 dropField = dropWhile isAlphaNum . dropWhile isSpace
 
--- Handles -i -s -w flags TODO look into skip-fields
-desiredCompare :: UniqOpts -> String -> String -> Ordering
-desiredCompare defaultOpts x y = compare x y
-desiredCompare opt xs ys = igf (limiter xs) (limiter ys)
+-- This should always be used for comparing lines
+limitedString :: UniqOpts -> String -> String
+limitedString opt = igf . checkLimit . char_skipper . field_skipper
     where
         igf = if ignoreCase opt
-              then (\x y -> compare (map toLower x) (map toLower y))
-              else compare
+              then map toLower
+              else id
         field_skipper = skipNfields $ skipFields opt
         char_skipper = drop $ skipChars opt
         checkLimit = case checkChars opt of
@@ -152,11 +151,28 @@ desiredCompare opt xs ys = igf (limiter xs) (limiter ys)
                         Just count -> if count == 0
                                       then const []
                                       else take count
-        limiter = checkLimit . char_skipper . field_skipper
+
+
+-- TODO map file lines into Map limitedString Occurance then handle printing by d/D/u/repeated/grouping
+
+-- Handles -i -s -w flags TODO look into skip-fields
+desiredCompare :: UniqOpts -> String -> String -> Ordering
+desiredCompare defaultOpts x y = compare x y
+desiredCompare opt xs ys = compare (limiter xs) (limiter ys)
+    where
+        limiter = limitedString opt
 
 type LineNumber = Int
 data Occurance = Unique LineNumber | Duplicated [LineNumber]
     deriving Show
+
+combineOccurance :: Occurance -> Occurance -> Occurance
+combineOccurance (Unique l) (Unique r)           = Duplicated [l,r]
+combineOccurance (Unique l) (Duplicated xs)      = Duplicated (l:xs)
+combineOccurance (Duplicated xs) (Unique l)      = Duplicated (l:xs)
+combineOccurance (Duplicated xs) (Duplicated ys) = Duplicated (xs++ys)
+
+-- TODO map lines to unique occurances ziped with line numbers then feed to Map limitedString Occurances, fromListWith
 
 filterUniqueOccs :: [Occurance] -> [Occurance]
 filterUniqueOccs xs = [x | x@(Unique {}) <- xs]
@@ -168,10 +184,7 @@ addOccurance :: Occurance -> LineNumber -> Occurance
 addOccurance (Unique fstln) newln = Duplicated [fstln,newln]
 addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
 
-uniq :: [String] -> [String]
-uniq xs = undefined
-    where
-        ln_s_pairs = zip [1..] xs
+
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
 main' defaultOpts inHandle outHandle = do
