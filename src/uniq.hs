@@ -8,8 +8,12 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
-                                                --NoSeperation for allDups
-data DuplicateHandling = NoDups | OneEachDups | AllDups | AllRepeated SeperationHandling | Grouped GroupHandling | UniqueHandling
+
+data DuplicateHandling = NoDups | -- default
+                         OneEachDups | -- d
+                         AllDups | -- D
+                         AllRepeated SeperationHandling |
+                         Grouped GroupHandling
     deriving Show
 
 --Maybe these clash
@@ -21,6 +25,7 @@ data GroupHandling = NoGroups | SeparateGroups | PrependGroups | AppendGroups | 
 data UniqOpts = UniqOpts {                                  -- Corresponding GNU Uniq flags
                     outputCount      :: Bool,               -- -c --count
                     outputDuplicates :: DuplicateHandling,  -- -d --all-repeated
+                    uniqueHandling   :: Bool,
                     skipFields       :: Int,                -- -f --skip-fields=N
                     ignoreCase       :: Bool,               -- -i --ignore-case
                     skipChars        :: Int,                -- -s --skip-chars=N
@@ -29,12 +34,13 @@ data UniqOpts = UniqOpts {                                  -- Corresponding GNU
                 }deriving Show
 
 defaultOpts :: UniqOpts
-defaultOpts = UniqOpts False NoDups 0 False 0 False Nothing
+defaultOpts = UniqOpts False NoDups False 0 False 0 False Nothing
 
 optsParser :: Parser UniqOpts
 optsParser = UniqOpts
             <$> outputCountParser
             <*> outputDuplicatesParser
+            <*> uniqueHandlingParser
             <*> skipFieldsParser
             <*> ignoreCaseParser
             <*> skipCharsParser
@@ -46,11 +52,10 @@ outputCountParser = switch ( short 'c' <> long "count" <> help "TODO prefix line
 
 -- -d -D --all-Repeated[GROUPS]
 outputDuplicatesParser :: Parser DuplicateHandling
-outputDuplicatesParser = allDupsParser <|> oneEachDupsParser <|> allRepeatedParser <|> groupHandlingParser <|> uniqueOnlyParser
+outputDuplicatesParser = allDupsParser <|> oneEachDupsParser <|> allRepeatedParser <|> groupHandlingParser
     where
         allDupsParser = flag NoDups AllDups ( short 'D' )
         oneEachDupsParser = flag' OneEachDups ( short 'd' )
-        uniqueOnlyParser = flag' UniqueHandling ( short 'u' <> long "unique" <> help "TODO Only print unique lines" )
 
 
 allRepeatedParser :: Parser DuplicateHandling
@@ -70,6 +75,8 @@ groupHandlingParser = separateGroupsParser <|> prependGroupsParser <|> appendGro
         appendGroupsParser   = flag' (Grouped AppendGroups) ( long "group=append" )
         bothGroupsParser     = flag' (Grouped BothGroups) ( long "group=both" )
 
+uniqueHandlingParser :: Parser Bool
+uniqueHandlingParser = switch ( short 'u' <> long "unique" <> help "TODO Only print unique lines if no duplicate handling is involved" )
 
 skipFieldsParser :: Parser Int
 skipFieldsParser = option auto ( short 'f' <> long "skip-fields" <> value 0 <> help "TODO avoid compariong the first N fields" )
