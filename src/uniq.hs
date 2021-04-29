@@ -163,16 +163,21 @@ desiredCompare opt xs ys = compare (limiter xs) (limiter ys)
         limiter = limitedString opt
 
 type LineNumber = Int
+
 data Occurance = Unique LineNumber | Duplicated [LineNumber]
     deriving Show
 
-combineOccurance :: Occurance -> Occurance -> Occurance
-combineOccurance (Unique l) (Unique r)           = Duplicated [l,r]
-combineOccurance (Unique l) (Duplicated xs)      = Duplicated (l:xs)
-combineOccurance (Duplicated xs) (Unique l)      = Duplicated (l:xs)
-combineOccurance (Duplicated xs) (Duplicated ys) = Duplicated (xs++ys)
+instance Semigroup Occurance where
+    (<>) (Unique l) (Unique r)           = Duplicated [l,r]
+    (<>) (Unique l) (Unique r)           = Duplicated [l,r]
+    (<>) (Unique l) (Duplicated xs)      = Duplicated (l:xs)
+    (<>) (Duplicated xs) (Unique l)      = Duplicated (l:xs)
+    (<>) (Duplicated xs) (Duplicated ys) = Duplicated (xs++ys)
 
--- TODO map lines to unique occurances ziped with line numbers then feed to Map limitedString Occurances, fromListWith
+lineOccurances :: UniqOpts -> [String] -> Map.Map String Occurance
+lineOccurances opts xs = Map.fromListWith (<>) $ toUniqueSingle <$> zip xs [1..]
+    where
+        toUniqueSingle = (\(s,ln) -> ((limitedString opts) s, Unique ln))
 
 filterUniqueOccs :: [Occurance] -> [Occurance]
 filterUniqueOccs xs = [x | x@(Unique {}) <- xs]
@@ -183,8 +188,6 @@ filterDuplicatedOccs xs = [x | x@(Duplicated {}) <- xs]
 addOccurance :: Occurance -> LineNumber -> Occurance
 addOccurance (Unique fstln) newln = Duplicated [fstln,newln]
 addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
-
-
 
 main' :: UniqOpts -> Handle -> Handle -> IO ()
 main' defaultOpts inHandle outHandle = do
