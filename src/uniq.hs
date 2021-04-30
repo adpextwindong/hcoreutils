@@ -145,6 +145,7 @@ dropField :: String -> String
 dropField = dropWhile isAlphaNum . dropWhile isSpace
 
 -- This should always be used for comparing lines
+-- NOTE. maybe this should be new typed to distingush its a limited view of the string
 limitedString :: UniqOpts -> String -> String
 limitedString opt = igf . checkLimit . char_skipper . field_skipper
     where
@@ -202,4 +203,6 @@ main' defaultOpts inHandle outHandle = do
     forM_ mergedLines $ \line -> do
         hPutStrLn outHandle line
 
-main' opts inHandle outHandle = undefined
+main' opts inHandle outHandle = do
+    let uniquenessMap = lineOccurances opts . lines <$>  hGetContents' inHandle
+    return ()
