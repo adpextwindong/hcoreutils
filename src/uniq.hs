@@ -25,7 +25,7 @@ data SeperationHandling = Prepend | Separate
     deriving Show
 
 data UniqOpts = UniqOpts {                                  -- Corresponding GNU Uniq flags
-                    outputDuplicates :: DuplicateHandling,  -- -d --all-repeated
+                    style            :: DuplicateHandling,  -- -d --all-repeated
                     ignoreCase       :: Bool,               -- -i --ignore-case
                     skipFields       :: Int,                -- -f --skip-fields=N
                     checkChars       :: Maybe Int,          -- -w --check-chars=N
@@ -206,6 +206,18 @@ handleOutputFormat opts occmap line handle = do
 main' :: UniqOpts -> String -> Handle -> IO ()
 main' (UniqOpts NoAdjacentDups False 0 Nothing 0 pOutputCount pNullTerminated) content outHandle = do
     mapM_ (hPutStrLn outHandle) $ tossSeqRepeat . lines $ content
+
+main' opts@(UniqOpts style _ _ _ _ _ _ ) content outHandle = do
+    let flines = lines content
+    let occmap = lineOccurances opts $ flines
+    forM_ flines (\_ -> do
+        case style of
+            NoDups          -> undefined --TODO
+            NoAdjacentDups  -> undefined --TODO
+            OneEachDups     -> undefined --TODO
+            AllDups         -> undefined --TODO
+            -- This should be handled seperately due to grouping AllRepeated handling -> undefined --TODO
+        )
 
 -- main' opts@( content outHandle = do
 --    let uniquenessMap = lineOccurances opts . lines $ content -- keyed by the limitedView of the string
