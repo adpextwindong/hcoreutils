@@ -166,7 +166,6 @@ data Occurance = Unique LineNumber | Duplicated [LineNumber]
 
 instance Semigroup Occurance where
     (<>) (Unique l) (Unique r)           = Duplicated [l,r]
-    (<>) (Unique l) (Unique r)           = Duplicated [l,r]
     (<>) (Unique l) (Duplicated xs)      = Duplicated (l:xs)
     (<>) (Duplicated xs) (Unique l)      = Duplicated (l:xs)
     (<>) (Duplicated xs) (Duplicated ys) = Duplicated (xs++ys)
