@@ -154,7 +154,7 @@ limitedString opt = igf . checkLimit . char_skipper . field_skipper
 
 -- Handles -i -s -w flags TODO look into skip-fields
 desiredCompare :: UniqOpts -> String -> String -> Ordering
-desiredCompare defaultOpts x y = compare x y
+desiredCompare (UniqOpts _ _ 0 False 0 _ Nothing) x y = compare x y
 desiredCompare opt xs ys = compare (limiter xs) (limiter ys)
     where
         limiter = limitedString opt
