@@ -6,6 +6,8 @@ import Options.Applicative
 import Control.Monad
 import Data.Char
 import Data.List
+import Data.Bifunctor
+
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 
@@ -172,7 +174,7 @@ instance Semigroup Occurance where
 lineOccurances :: UniqOpts -> [String] -> Map.Map String Occurance
 lineOccurances opts xs = Map.fromListWith (<>) $ toUniqueSingle <$> zip xs [1..]
     where
-        toUniqueSingle = \(s,ln) -> (limitedString opts s, Unique ln)
+        toUniqueSingle = bimap (limitedString opts) Unique
 
 filterUniqueOccs :: [Occurance] -> [Occurance]
 filterUniqueOccs xs = [x | x@Unique {} <- xs]
