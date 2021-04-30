@@ -9,6 +9,7 @@ coreutils RIIHaskell
 | [basename](src/basename.hs) | Skips implementing the -a flag |
 | [echo](src/echo.hs) | Character locale handling needs testing with octal and hex values |
 | [true](src/true.hs) | |
+| [uniq](src/uniq.hs | WIP Following FreeBSD options |
 | [wc](src/wc.hs) | Practically done except for Character locale handling and its line count is based on ByteString's idea of lines. |
 | [yes](src/yes.hs) | |
 
