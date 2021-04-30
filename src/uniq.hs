@@ -9,12 +9,14 @@ import Data.List
 import Data.Bifunctor
 
 import qualified Data.Set as Set
+import Data.Map.Strict ((!))
 import qualified Data.Map.Strict as Map
 
-data DuplicateHandling = NoDups | -- default -u
+data DuplicateHandling = NoAdjacentDups | -- default
                          OneEachDups | -- d
                          AllDups | -- D
-                         AllRepeated SeperationHandling --all-repeated
+                         AllRepeated SeperationHandling | --all-repeated
+                         NoDups -- u
 
     deriving Show
 
@@ -23,27 +25,28 @@ data SeperationHandling = Prepend | Separate
     deriving Show
 
 data UniqOpts = UniqOpts {                                  -- Corresponding GNU Uniq flags
-                    outputCount      :: Bool,               -- -c --count
                     outputDuplicates :: DuplicateHandling,  -- -d --all-repeated
-                    skipFields       :: Int,                -- -f --skip-fields=N
                     ignoreCase       :: Bool,               -- -i --ignore-case
+                    skipFields       :: Int,                -- -f --skip-fields=N
+                    checkChars       :: Maybe Int,          -- -w --check-chars=N
                     skipChars        :: Int,                -- -s --skip-chars=N
-                    nullTerminated   :: Bool,               -- -z --zero-terminated
-                    checkChars       :: Maybe Int           -- -w --check-chars=N
+                    outputCount      :: Bool,               -- -c --count
+                    nullTerminated   :: Bool                -- -z --zero-terminated
                 }deriving Show
 
-defaultOpts :: UniqOpts
-defaultOpts = UniqOpts False NoDups 0 False 0 False Nothing
+-- defaultOpts :: UniqOpts
+-- defaultOpts = UniqOpts False NoAdjacentDups 0 False 0 False Nothing
 
 optsParser :: Parser UniqOpts
 optsParser = UniqOpts
-            <$> outputCountParser
-            <*> outputDuplicatesParser
-            <*> skipFieldsParser
+            <$> outputDuplicatesParser
             <*> ignoreCaseParser
-            <*> skipCharsParser
-            <*> nullTerminatedParser
+            <*> skipFieldsParser
             <*> checkCharsParser
+            <*> skipCharsParser
+            <*> outputCountParser
+            <*> nullTerminatedParser
+
 
 outputCountParser :: Parser Bool
 outputCountParser = switch ( short 'c' <> long "count" <> help "TODO prefix lines by the number of occurences" )
@@ -154,7 +157,7 @@ limitedString opt = igf . checkLimit . char_skipper . field_skipper
 
 -- Handles -i -s -w flags TODO look into skip-fields
 desiredCompare :: UniqOpts -> String -> String -> Ordering
-desiredCompare (UniqOpts _ _ 0 False 0 _ Nothing) x y = compare x y
+desiredCompare (UniqOpts _ False 0 Nothing 0 _ _) x y = compare x y
 desiredCompare opt xs ys = compare (limiter xs) (limiter ys)
     where
         limiter = limitedString opt
@@ -185,11 +188,25 @@ addOccurance :: Occurance -> LineNumber -> Occurance
 addOccurance (Unique fstln) newln = Duplicated [fstln,newln]
 addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
 
-main' :: UniqOpts -> String -> Handle -> IO ()
-main' defaultOpts content outHandle = do
-    let mergedLines = tossSeqRepeat . lines $ content
-    mapM_ (hPutStrLn outHandle) mergedLines
+handleOutputFormat :: UniqOpts -> Map.Map String Occurance -> String -> Handle -> IO ()
+handleOutputFormat opts occmap line handle = do
+    if outputCount opts
+    then
+        case occmap ! limitedString opts line of
+            Unique _ -> hPutStr handle "1 "
+            Duplicated xs -> hPutStr handle $ show (length xs) ++ " "
+    else return ()
 
-main' opts content outHandle = do
-    let uniquenessMap = lineOccurances opts . lines $ content -- keyed by the limitedView of the string
-    return ()
+    hPutStr handle line
+
+    if nullTerminated opts
+    then hPutStr handle "\0"
+    else hPutStr handle "\n"
+
+main' :: UniqOpts -> String -> Handle -> IO ()
+main' (UniqOpts NoAdjacentDups False 0 Nothing 0 pOutputCount pNullTerminated) content outHandle = do
+    mapM_ (hPutStrLn outHandle) $ tossSeqRepeat . lines $ content
+
+-- main' opts@( content outHandle = do
+--    let uniquenessMap = lineOccurances opts . lines $ content -- keyed by the limitedView of the string
+--    return ()
