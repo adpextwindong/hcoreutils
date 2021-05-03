@@ -188,12 +188,10 @@ addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
 
 handleOutputFormat :: UniqOpts -> Map.Map String Occurance -> Handle -> String -> IO ()
 handleOutputFormat opts occmap handle line = do
-    if outputCount opts
-    then
-        case occmap ! limitedString opts line of
+    when (outputCount opts)
+       $ case occmap ! limitedString opts line of
             Unique _ -> hPutStr handle "1 "
             Duplicated xs -> hPutStr handle $ show (length xs) ++ " "
-    else return ()
 
     hPutStr handle line
 
@@ -205,47 +203,43 @@ pUniqueOcc :: Ord k => p -> Map.Map k Occurance -> (p -> k) -> Bool
 pUniqueOcc line occmap limiter = case occurance of
                                     Unique _ -> True
                                     Duplicated _-> False
-     where occurance = occmap ! (limiter line)
+     where occurance = occmap ! limiter line
 
 pDuplicateOcc :: Ord k => p -> Map.Map k Occurance -> (p -> k) -> Bool
 pDuplicateOcc line occmap limiter = case occurance of
                                     Unique _ -> False
                                     Duplicated _-> True
-     where occurance = occmap ! (limiter line)
+     where occurance = occmap ! limiter line
 
 main' :: UniqOpts -> String -> Handle -> IO ()
 main' opts@(UniqOpts NoAdjacentDups _ _ _ _ _ _) content outHandle = do
     let flines = lines content
-    let occmap = lineOccurances opts $ flines
+    let occmap = lineOccurances opts flines
 
     mapM_ (handleOutputFormat opts occmap outHandle) . tossSeqRepeat $ flines
 
 main' opts@(UniqOpts OneEachDups _ _ _ _ _ _) content outHandle = do
     let flines = lines content
-    let occmap = lineOccurances opts $ flines
+    let occmap = lineOccurances opts flines
     let limiter = limitedString opts
 
     forM_ (zip flines [1..]) (\(line,line_number) -> do
        case occmap ! limiter line of
         Unique _ -> handleOutputFormat opts occmap outHandle line
-        Duplicated xs -> if head xs == line_number
-                        then handleOutputFormat opts occmap outHandle line
-                        else return ()
+        Duplicated xs -> when (head xs == line_number)
+                            $ handleOutputFormat opts occmap outHandle line
         )
 
 main' opts@(UniqOpts ustyle _ _ _ _ _ _ ) content outHandle = do
     let flines = lines content
-    let occmap = lineOccurances opts $ flines
+    let occmap = lineOccurances opts flines
     let limiter = limitedString opts
 
     forM_ flines (\line -> do
+        let pf = handleOutputFormat opts occmap outHandle line
         case ustyle of
-            NoDups          -> if pUniqueOcc line occmap limiter
-                               then handleOutputFormat opts occmap outHandle line
-                               else return ()
-            AllDups         -> if pDuplicateOcc line occmap limiter
-                               then handleOutputFormat opts occmap outHandle line
-                               else return ()
+            NoDups          -> when(pUniqueOcc line occmap limiter) pf
+            AllDups         -> when (pDuplicateOcc line occmap limiter) pf
             _               -> return () --should be handled already
         )
 
