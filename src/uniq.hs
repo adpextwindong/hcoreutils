@@ -5,10 +5,8 @@ import System.Exit (exitSuccess)
 import Options.Applicative
 import Control.Monad
 import Data.Char
-import Data.List
 import Data.Bifunctor
 
-import qualified Data.Set as Set
 import Data.Map.Strict ((!))
 import qualified Data.Map.Strict as Map
 
@@ -188,8 +186,8 @@ addOccurance :: Occurance -> LineNumber -> Occurance
 addOccurance (Unique fstln) newln = Duplicated [fstln,newln]
 addOccurance (Duplicated xs) newln = Duplicated $ newln:xs
 
-handleOutputFormat :: UniqOpts -> Map.Map String Occurance -> String -> Handle -> IO ()
-handleOutputFormat opts occmap line handle = do
+handleOutputFormat :: UniqOpts -> Map.Map String Occurance -> Handle -> String -> IO ()
+handleOutputFormat opts occmap handle line = do
     if outputCount opts
     then
         case occmap ! limitedString opts line of
@@ -203,20 +201,52 @@ handleOutputFormat opts occmap line handle = do
     then hPutStr handle "\0"
     else hPutStr handle "\n"
 
-main' :: UniqOpts -> String -> Handle -> IO ()
-main' (UniqOpts NoAdjacentDups False 0 Nothing 0 pOutputCount pNullTerminated) content outHandle = do
-    mapM_ (hPutStrLn outHandle) $ tossSeqRepeat . lines $ content
+pUniqueOcc :: Ord k => p -> Map.Map k Occurance -> (p -> k) -> Bool
+pUniqueOcc line occmap limiter = case occurance of
+                                    Unique _ -> True
+                                    Duplicated _-> False
+     where occurance = occmap ! (limiter line)
 
-main' opts@(UniqOpts style _ _ _ _ _ _ ) content outHandle = do
+pDuplicateOcc :: Ord k => p -> Map.Map k Occurance -> (p -> k) -> Bool
+pDuplicateOcc line occmap limiter = case occurance of
+                                    Unique _ -> False
+                                    Duplicated _-> True
+     where occurance = occmap ! (limiter line)
+
+main' :: UniqOpts -> String -> Handle -> IO ()
+main' opts@(UniqOpts NoAdjacentDups _ _ _ _ _ _) content outHandle = do
     let flines = lines content
     let occmap = lineOccurances opts $ flines
-    forM_ flines (\_ -> do
-        case style of
-            NoDups          -> undefined --TODO
-            NoAdjacentDups  -> undefined --TODO
-            OneEachDups     -> undefined --TODO
-            AllDups         -> undefined --TODO
-            -- This should be handled seperately due to grouping AllRepeated handling -> undefined --TODO
+
+    mapM_ (handleOutputFormat opts occmap outHandle) . tossSeqRepeat $ flines
+
+main' opts@(UniqOpts OneEachDups _ _ _ _ _ _) content outHandle = do
+    let flines = lines content
+    let occmap = lineOccurances opts $ flines
+    let limiter = limitedString opts
+
+    forM_ (zip flines [1..]) (\(line,line_number) -> do
+       case occmap ! limiter line of
+        Unique _ -> handleOutputFormat opts occmap outHandle line
+        Duplicated xs -> if head xs == line_number
+                        then handleOutputFormat opts occmap outHandle line
+                        else return ()
+        )
+
+main' opts@(UniqOpts ustyle _ _ _ _ _ _ ) content outHandle = do
+    let flines = lines content
+    let occmap = lineOccurances opts $ flines
+    let limiter = limitedString opts
+
+    forM_ flines (\line -> do
+        case ustyle of
+            NoDups          -> if pUniqueOcc line occmap limiter
+                               then handleOutputFormat opts occmap outHandle line
+                               else return ()
+            AllDups         -> if pDuplicateOcc line occmap limiter
+                               then handleOutputFormat opts occmap outHandle line
+                               else return ()
+            _               -> return () --should be handled already
         )
 
 -- main' opts@( content outHandle = do
